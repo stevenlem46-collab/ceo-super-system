@@ -104,7 +104,7 @@
   }
 
   /* ── MAIN CONTENT ── */
-  .main { margin-left: 160px; flex: 1; padding: 24px 24px 80px; }
+  .main { margin-left: 160px; flex: 1; min-width: 0; padding: 24px 24px 80px; }
 
   /* ── STARS DECO ── */
   .stars { pointer-events: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; z-index: 0; }
@@ -234,6 +234,8 @@
     padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px;
     border-bottom: 1px solid var(--border); white-space: nowrap;
   }
+  #cust-table-wrap { overflow-y: auto; max-height: calc(100vh - 260px); }
+  #cust-table-wrap thead th { position: sticky; top: 0; z-index: 2; }
   td {
     padding: 10px 12px; border-bottom: 1px solid #F1F5F9;
     color: var(--text); white-space: nowrap;
@@ -258,6 +260,12 @@
   }
   .status-sel.is-pending {
     background: #FEF3C7; color: #92400E; border-color: #FCD34D;
+  }
+  .progress-sel.is-urgent {
+    background: #FEE2E2; color: #991B1B; border-color: #FCA5A5; font-weight: 600;
+  }
+  .progress-sel.is-complete {
+    background: #D1FAE5; color: #065F46; border-color: #6EE7B7; font-weight: 600;
   }
   .balance-auto {
   background: #F0FDF4 !important;
@@ -293,6 +301,27 @@
     box-shadow: 0 0 0 2px #FCA5A5; }
   tr.emg-row { background: linear-gradient(90deg, #FFF1F2 0%, #FFF 100%) !important; }
   tr.emg-row td { border-left: 3px solid #EF4444 !important; }
+
+  /* 冻结列：客户表格 NO. / 客户姓名 / 护照号 三栏左侧固定，横向滚动时保持可见 */
+  #cust-table-wrap th:nth-child(1), #cust-table-wrap td:nth-child(1),
+  #cust-table-wrap th:nth-child(2), #cust-table-wrap td:nth-child(2),
+  #cust-table-wrap th:nth-child(3), #cust-table-wrap td:nth-child(3) {
+    position: sticky;
+    background: #FFFFFF;
+  }
+  #cust-table-wrap th:nth-child(1), #cust-table-wrap td:nth-child(1) { left: 0px; width: 42px; }
+  #cust-table-wrap th:nth-child(2), #cust-table-wrap td:nth-child(2) { left: 42px; width: 110px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+  #cust-table-wrap th:nth-child(3), #cust-table-wrap td:nth-child(3) { left: 152px; width: 120px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+  #cust-table-wrap td:nth-child(3) { border-right: 2px solid var(--border); }
+  #cust-table-wrap thead th:nth-child(1), #cust-table-wrap thead th:nth-child(2), #cust-table-wrap thead th:nth-child(3) {
+    z-index: 3; background: #F8FAFC;
+  }
+  #cust-table-wrap tr:hover td:nth-child(1), #cust-table-wrap tr:hover td:nth-child(2), #cust-table-wrap tr:hover td:nth-child(3) {
+    background: #F8FAFC;
+  }
+  #cust-table-wrap tr.emg-row td:nth-child(1), #cust-table-wrap tr.emg-row td:nth-child(2), #cust-table-wrap tr.emg-row td:nth-child(3) {
+    background: #FFF1F2;
+  }
 
   /* Emergency side panel */
   #emg-panel {
@@ -661,8 +690,9 @@
         </div>
         <div class="stat-card">
           <div class="stat-card-top"><span class="stat-icon">🔔</span><span class="stat-label">今日利润</span></div>
-          <div class="stat-value big">MYR <span id="dash-today-profit">0</span></div>
-          <div class="stat-compare">较昨日 <span class="up">↑ MYR 450</span></div>
+          <div class="stat-value big">RM <span id="dash-today-profit-rm">0</span></div>
+          <div style="font-size:15px;color:#F59E0B;font-weight:700;margin-top:2px;">RMB <span id="dash-today-profit-rmb">0</span></div>
+          <div class="stat-compare">今日数据</div>
         </div>
         <div class="stat-card">
           <div class="stat-card-top"><span class="stat-icon">👥</span><span class="stat-label">本月客户群体</span></div>
@@ -671,12 +701,14 @@
         </div>
         <div class="stat-card">
           <div class="stat-card-top"><span class="stat-icon">📈</span><span class="stat-label">本月营业额</span></div>
-          <div class="stat-value big">MYR <span id="dash-month-revenue">0</span></div>
+          <div class="stat-value big">RM <span id="dash-month-revenue-rm">0</span></div>
+          <div style="font-size:15px;color:#F59E0B;font-weight:700;margin-top:2px;">RMB <span id="dash-month-revenue-rmb">0</span></div>
           <div class="stat-compare" id="dash-month-revenue-label">当前月份数据</div>
         </div>
         <div class="stat-card">
           <div class="stat-card-top"><span class="stat-icon">💰</span><span class="stat-label">本月总利润</span></div>
-          <div class="stat-value big">MYR <span id="dash-month-profit">0</span></div>
+          <div class="stat-value big">RM <span id="dash-month-profit-rm">0</span></div>
+          <div style="font-size:15px;color:#F59E0B;font-weight:700;margin-top:2px;">RMB <span id="dash-month-profit-rmb">0</span></div>
           <div class="stat-compare" id="dash-month-profit-label">当前月份数据</div>
         </div>
       </div>
@@ -714,6 +746,7 @@
               <div style="font-size:13px;color:var(--text-light);font-weight:600">待付尾款</div>
               <div style="font-size:30px;font-weight:800;color:var(--text)"><span id="dash-payment-due">0</span> <span style="font-size:14px;font-weight:500">位</span></div>
               <div style="font-size:12px;color:var(--text-light)">预估：MYR <span id="dash-payment-total">0</span></div>
+              <div style="font-size:12px;color:#F59E0B;font-weight:700;margin-top:2px;">RMB <span id="dash-payment-total-rmb">0</span></div>
             </div>
           </div>
         </div>
@@ -780,11 +813,13 @@
           <div style="background:rgba(255,255,255,0.07);border-radius:12px;padding:16px;text-align:center;">
             <div style="font-size:12px;color:#93c5fd;font-weight:600;margin-bottom:6px;">本月营业额</div>
             <div style="font-size:22px;font-weight:800;color:#34d399;">MYR <span id="dash-perf-revenue">0</span></div>
+            <div style="font-size:15px;font-weight:700;color:#F59E0B;margin-top:2px;">RMB <span id="dash-perf-revenue-rmb">0</span></div>
             <div style="font-size:12px;color:#7dd3fc;margin-top:2px;">总卖价</div>
           </div>
           <div style="background:rgba(255,255,255,0.07);border-radius:12px;padding:16px;text-align:center;">
             <div style="font-size:12px;color:#93c5fd;font-weight:600;margin-bottom:6px;">本月利润</div>
             <div style="font-size:22px;font-weight:800;color:#fbbf24;">MYR <span id="dash-perf-profit">0</span></div>
+            <div style="font-size:15px;font-weight:700;color:#F59E0B;margin-top:2px;">RMB <span id="dash-perf-profit-rmb">0</span></div>
             <div style="font-size:12px;color:#7dd3fc;margin-top:2px;">净利润</div>
           </div>
         </div>
@@ -835,8 +870,9 @@
           <button class="tab active" onclick="filterByStatus('全部', this)">全部</button>
           <button class="tab" onclick="filterByStatus('未完成', this)">未完成</button>
           <button class="tab" onclick="filterByStatus('已完成', this)">已完成</button>
+          <button class="tab" onclick="filterByStatus('待递交', this)">待递交</button>
         </div>
-        <select class="filter-select"><option>项目内容</option><option>马来西亚借票</option><option>盖章</option></select>
+        <select class="filter-select" id="cust-proj-filter" onchange="filterByProject(this.value)"><option value="">项目内容</option></select>
         <select class="filter-select" id="month-filter-sel" onchange="filterByMonth(this.value)"><option value="">月份</option></select>
         <button class="btn-primary" onclick="showPage('addcustomer',null)">➕ 新增客户</button>
         <button class="btn-secondary" onclick="downloadCSV()" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">⬇ CSV</button>
@@ -845,7 +881,7 @@
 
       <!-- Table -->
       <div class="section-card" style="padding:0;overflow:hidden;">
-        <div class="table-wrap">
+        <div class="table-wrap" id="cust-table-wrap">
           <table>
             <thead>
               <tr>
@@ -860,21 +896,8 @@
           </table>
         </div>
         <div class="pagination" style="padding:12px 16px;">
-          <span>共 322 条记录 🔔</span>
-          <div class="page-btns">
-            <button class="page-btn">‹</button>
-            <button class="page-btn active">1</button>
-            <button class="page-btn">2</button>
-            <button class="page-btn">3</button>
-            <button class="page-btn">4</button>
-            <button class="page-btn">5</button>
-            <button class="page-btn">…</button>
-            <button class="page-btn">33</button>
-            <button class="page-btn">›</button>
-          </div>
-          <select class="filter-select" style="width:auto">
-            <option>20 条/页</option><option>50 条/页</option>
-          </select>
+          <span id="cust-record-count">共 0 条记录 🔔</span>
+          <div class="page-btns" id="cust-page-btns"></div>
         </div>
       </div>
     </div>
@@ -955,7 +978,7 @@
         <div class="form-footer">
           <div class="form-notice">ℹ️ 除支付方式外，其它栏位为必填，填写完成后才能保存客户</div>
           <div style="display:flex;gap:10px">
-            <button class="btn-secondary" onclick="showPage('customers',null)">取消</button>
+            <button class="btn-secondary" onclick="clearAddForm();showPage('customers',null)">取消</button>
             <button class="btn-primary" onclick="saveNewCustomer()">保存客户</button>
           </div>
         </div>
@@ -1541,6 +1564,17 @@ document.querySelectorAll('.tab').forEach(tab => {
 // Load projects first, then customers (so project dropdown is ready)
 loadProjectsFromSupabase().then(function() {
   loadCustomersFromSupabase();
+  // Populate project filter dropdown from projectData
+  var sel = document.getElementById('cust-proj-filter');
+  if (sel && projectData && projectData.length) {
+    sel.innerHTML = '<option value="">项目内容</option>';
+    projectData.filter(function(p){ return p.status === 'on'; }).forEach(function(p) {
+      var o = document.createElement('option');
+      o.value = p.name;
+      o.textContent = p.name;
+      sel.appendChild(o);
+    });
+  }
 });
 
 // ── DORAEMON SVG ──
@@ -1598,11 +1632,21 @@ function updateStatusColor(sel) {
   sel.classList.toggle('is-done', sel.value === '已完成');
   sel.classList.toggle('is-pending', sel.value === '未完成');
 }
+// Progress select color
+function updateProgressColor(sel) {
+  sel.classList.toggle('is-urgent', sel.value === '待递交');
+  sel.classList.toggle('is-complete', sel.value === '已完成');
+}
 syncAddProjDropdown();
 
   document.querySelectorAll('.status-sel').forEach(sel => {
   updateStatusColor(sel);
   sel.addEventListener('change', () => updateStatusColor(sel));
+});
+
+  document.querySelectorAll('.progress-sel').forEach(sel => {
+  updateProgressColor(sel);
+  sel.addEventListener('change', () => updateProgressColor(sel));
 });
 
 // Inline editable columns
@@ -2160,7 +2204,7 @@ async function saveNewCustomer() {
     <td>${pay || '-'}</td>
     <td class="date-cell"><input type="date" value=""></td>
     <td class="valid-days">-</td>
-    <td><select class="progress-sel"><option selected>待递交</option><option>待补资料</option><option>待处理</option><option>待付款</option><option>审批中</option><option>未贴签</option><option>已完成</option><option>已取消</option></select></td>
+    <td><select class="progress-sel is-urgent"><option selected>待递交</option><option>待补资料</option><option>待处理</option><option>待付款</option><option>审批中</option><option>未贴签</option><option>已完成</option><option>已取消</option></select></td>
     <td><select class="status-sel is-pending"><option selected>未完成</option><option>已完成</option></select></td>
     <td style="text-align:center;"><button class="emg-btn" onclick="toggleEmergency(this)" title="标记紧急处理">🚨</button></td>
     <td style="text-align:center;"><button onclick="deleteCustomerRow(this)" style="background:#EF4444;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;">删除</button></td>`;
@@ -2198,12 +2242,12 @@ async function saveNewCustomer() {
     // Save progress/status changes via unified saveFullRowToStorage
     function saveNewRowStorage() { if (window.saveFullRowToStorage) window.saveFullRowToStorage(tr); }
     var newProgSel = tr.querySelector('.progress-sel');
-    if (newProgSel) newProgSel.addEventListener('change', saveNewRowStorage);
+    if (newProgSel) newProgSel.addEventListener('change', function(){ saveNewRowStorage(); if(typeof updateProgressColor==='function') updateProgressColor(newProgSel); });
     var newStatSel = tr.querySelector('.status-sel');
     if (newStatSel) newStatSel.addEventListener('change', function(){ saveNewRowStorage(); if(typeof updateStatusColor==='function') updateStatusColor(newStatSel); });
   }
   // Save to Supabase (let Supabase auto-generate UUID) + sync to Google Sheets
-  var custData = {name:name, passport:passport, project:project, agent:agent, deposit:Number(deposit)||0, cost_type:depositCur||'RM', price:Number(price)||0, payment:pay, submit_date:todayStr, customer_no:nextNo, progress:'待递交', status:'未完成'};
+  var custData = {name:name, passport:passport, project:project, agent:agent, deposit:Number(deposit)||0, cost_type:depositCur||'RM', price:Number(price)||0, payment:pay, submit_date:todayStr, progress:'待递交', status:'未完成'};
   // 立即 POST 到 Google Apps Script（不等 Supabase 回调，最可靠）
   /* Google Sheets 同步已移除（旧系统专用） */
   // 同时存入 Supabase
@@ -2253,6 +2297,97 @@ function clearAddForm() {
   if (payEl) payEl.value = '';
 }
 
+// ── EDIT CUSTOMER MODAL ──
+var _editModalTr = null;
+function openEditModal(tr) {
+  _editModalTr = tr;
+  var tds = tr.querySelectorAll('td');
+  function gt(i) { return tds[i] ? tds[i].textContent.trim() : ''; }
+  function gNum(i) { return gt(i).replace(/[^0-9.-]/g,'') || ''; }
+  // Basic
+  document.getElementById('em-name').value = gt(1);
+  document.getElementById('em-passport').value = gt(2);
+  document.getElementById('em-pic').value = gt(3);
+  // Project dropdown
+  var projSel = document.getElementById('em-project');
+  projSel.innerHTML = '<option value="">请选择</option>';
+  var projSel4 = tds[4] ? tds[4].querySelector('select') : null;
+  var projVal = projSel4 ? projSel4.value : gt(4);
+  var pList = (projectData && projectData.length) ? projectData.filter(function(p){return p.status==='on';}) : [];
+  if (!pList.length) { var o=document.createElement('option');o.value=projVal;o.textContent=projVal;o.selected=true;projSel.appendChild(o); }
+  else { pList.forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name;if(p.name===projVal)o.selected=true;projSel.appendChild(o);}); }
+  document.getElementById('em-agent').value = gt(5);
+  document.getElementById('em-date').value = gt(6).replace(/\//g,'-');
+  document.getElementById('em-passto').value = gt(7);
+  document.getElementById('em-extrafee').value = gNum(8);
+  document.getElementById('em-deposit').value = gNum(9);
+  // Cost type select
+  var ctSel = tds[11] ? tds[11].querySelector('select') : null;
+  document.getElementById('em-costtype').value = ctSel ? ctSel.value : 'RM';
+  document.getElementById('em-price').value = gNum(12);
+  document.getElementById('em-cost').value = gNum(13);
+  document.getElementById('em-shareprofit').value = gNum(14);
+  document.getElementById('em-note').value = gt(16);
+  document.getElementById('em-pay').value = gt(17);
+  // Visa date
+  var visaInp = tds[18] ? tds[18].querySelector('input[type="date"]') : null;
+  document.getElementById('em-visadate').value = visaInp ? visaInp.value : '';
+  // Progress / Status
+  var progSel = tds[20] ? tds[20].querySelector('select') : null;
+  document.getElementById('em-progress').value = progSel ? progSel.value : '待递交';
+  var statSel = tds[21] ? tds[21].querySelector('select') : null;
+  document.getElementById('em-status').value = statSel ? statSel.value : '未完成';
+  document.getElementById('edit-cust-modal').style.display = 'flex';
+}
+function closeEditModal() {
+  document.getElementById('edit-cust-modal').style.display = 'none';
+  _editModalTr = null;
+}
+function saveEditModal() {
+  if (!_editModalTr) return;
+  var tr = _editModalTr;
+  var tds = tr.querySelectorAll('td');
+  function st(i, v) { if (tds[i]) tds[i].textContent = v; }
+  function setSel(i, v) { var s=tds[i]?tds[i].querySelector('select'):null; if(s) s.value=v; }
+  st(1, document.getElementById('em-name').value.trim());
+  st(2, document.getElementById('em-passport').value.trim());
+  st(3, document.getElementById('em-pic').value.trim());
+  setSel(4, document.getElementById('em-project').value);
+  st(5, document.getElementById('em-agent').value.trim());
+  st(6, document.getElementById('em-date').value);
+  st(7, document.getElementById('em-passto').value.trim());
+  st(8, document.getElementById('em-extrafee').value || '0');
+  st(9, document.getElementById('em-deposit').value || '0');
+  setSel(11, document.getElementById('em-costtype').value);
+  st(12, document.getElementById('em-price').value || '0');
+  st(13, document.getElementById('em-cost').value || '0');
+  st(14, document.getElementById('em-shareprofit').value || '0');
+  st(16, document.getElementById('em-note').value.trim());
+  st(17, document.getElementById('em-pay').value.trim());
+  var visaInp = tds[18] ? tds[18].querySelector('input[type="date"]') : null;
+  if (visaInp) visaInp.value = document.getElementById('em-visadate').value;
+  setSel(20, document.getElementById('em-progress').value);
+  setSel(21, document.getElementById('em-status').value);
+  var pSel = tds[20] ? tds[20].querySelector('.progress-sel') : null;
+  if (pSel && typeof updateProgressColor==='function') updateProgressColor(pSel);
+  var sSel = tds[21] ? tds[21].querySelector('.status-sel') : null;
+  if (sSel && typeof updateStatusColor==='function') updateStatusColor(sSel);
+  if (typeof recalcProfit==='function') recalcProfit(tr);
+  if (typeof recalcBalance==='function') recalcBalance(tr);
+  if (typeof updateValidDays==='function') updateValidDays(tr);
+  if (typeof window.saveFullRowToStorage==='function') window.saveFullRowToStorage(tr);
+  if (typeof syncDashboard==='function') syncDashboard();
+  closeEditModal();
+}
+// Row click → open edit modal (ignore interactive elements)
+document.getElementById('cust-tbody').addEventListener('click', function(e) {
+  if (e.target.closest('button') || e.target.tagName==='SELECT' || e.target.closest('select') ||
+      e.target.tagName==='INPUT' || e.target.closest('input') || e.target.isContentEditable) return;
+  var tr = e.target.closest('tr[data-sb-id]');
+  if (!tr) return;
+  openEditModal(tr);
+});
+
 function showSuccessToast() {
   setTimeout(() => {
     const toast = document.getElementById('success-toast');
@@ -2296,6 +2431,9 @@ function populateMonthFilter(rows) {
 
 var _custFilterStatus = '全部';
 var _custFilterMonth = '';
+var _custFilterProject = '';
+var _custCurrentPage = 1;
+var CUST_PAGE_SIZE = 100;
 
 function filterCustomers() {
   var keyword = ((document.getElementById('cust-search') || {}).value || '').toLowerCase().trim();
@@ -2303,6 +2441,7 @@ function filterCustomers() {
   var ym = _custFilterMonth;
   document.querySelectorAll('#cust-tbody tr').forEach(function(tr) {
     var tds = tr.querySelectorAll('td');
+    if (tds.length < 5) return; // skip placeholder rows
     // keyword match: name(1), passport(2), project(4), agent(5)
     var name = tds[1] ? tds[1].textContent.trim().toLowerCase() : '';
     var passport = tds[2] ? tds[2].textContent.trim().toLowerCase() : '';
@@ -2315,10 +2454,53 @@ function filterCustomers() {
     // status match
     var statusSel = tr.querySelector('.status-sel');
     var statusVal = statusSel ? statusSel.value : '';
-    var matchStatus = (status === '全部') || (statusVal === status);
-    tr.style.display = (matchKeyword && matchMonth && matchStatus) ? '' : 'none';
+    var progressSel = tr.querySelector('.progress-sel');
+    var progressVal = progressSel ? progressSel.value : '';
+    var matchStatus = (status === '全部') || (status === '待递交' ? progressVal === '待递交' : statusVal === status);
+    // project match
+    var projVal = tds[4] ? tds[4].textContent.trim() : '';
+    var matchProject = !_custFilterProject || projVal === _custFilterProject;
+    tr.dataset.filtered = (matchKeyword && matchMonth && matchStatus && matchProject) ? '1' : '0';
   });
-  if (typeof updatePagination === 'function') updatePagination();
+  _custCurrentPage = 1;
+  updatePagination();
+}
+
+function updatePagination() {
+  var allRows = Array.from(document.querySelectorAll('#cust-tbody tr[data-sb-id]'));
+  var matchedRows = allRows.filter(function(tr){ return tr.dataset.filtered !== '0'; });
+  var total = matchedRows.length;
+  var totalPages = Math.max(1, Math.ceil(total / CUST_PAGE_SIZE));
+  if (_custCurrentPage > totalPages) _custCurrentPage = totalPages;
+  if (_custCurrentPage < 1) _custCurrentPage = 1;
+  var start = (_custCurrentPage - 1) * CUST_PAGE_SIZE;
+  var end = start + CUST_PAGE_SIZE;
+  allRows.forEach(function(tr){ tr.style.display = 'none'; });
+  matchedRows.forEach(function(tr, i){ if (i >= start && i < end) tr.style.display = ''; });
+  var countEl = document.getElementById('cust-record-count');
+  if (countEl) countEl.textContent = '共 ' + total + ' 条记录 🔔';
+  var btnsEl = document.getElementById('cust-page-btns');
+  if (!btnsEl) return;
+  if (totalPages <= 1) { btnsEl.innerHTML = ''; return; }
+  var html = '<button class="page-btn" onclick="custGoPage('+(_custCurrentPage-1)+')">‹</button>';
+  var prev = 0;
+  for (var p = 1; p <= totalPages; p++) {
+    var near = (p===1 || p===totalPages || Math.abs(p-_custCurrentPage)<=1);
+    if (near) {
+      if (prev && p-prev>1) html += '<button class="page-btn" style="pointer-events:none;cursor:default;">…</button>';
+      html += '<button class="page-btn'+(p===_custCurrentPage?' active':'')+'" onclick="custGoPage('+p+')">'+p+'</button>';
+      prev = p;
+    }
+  }
+  html += '<button class="page-btn" onclick="custGoPage('+(_custCurrentPage+1)+')">›</button>';
+  btnsEl.innerHTML = html;
+}
+
+function custGoPage(p) {
+  _custCurrentPage = p;
+  updatePagination();
+  var custPage = document.getElementById('page-customers');
+  if (custPage) custPage.scrollTop = 0;
 }
 
 function filterByMonth(ym) {
@@ -2332,6 +2514,11 @@ function filterByStatus(status, btn) {
   document.querySelectorAll('.tab-group .tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
+  filterCustomers();
+}
+
+function filterByProject(proj) {
+  _custFilterProject = proj;
   filterCustomers();
 }
 
@@ -2560,6 +2747,49 @@ async function saveFinanceRecord() {
   </div>
 </div>
 
+<!-- Edit Customer Modal -->
+<div id="edit-cust-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:16px;box-sizing:border-box;overflow:auto;">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="background:#1E3A5F;border-radius:16px 16px 0 0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1;">
+      <span style="color:#fff;font-size:15px;font-weight:700;">✏️ 编辑客户资料</span>
+      <button onclick="closeEditModal()" style="background:none;border:none;color:#94A3B8;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <div style="font-size:12px;font-weight:700;color:#1E3A5F;margin-bottom:10px;letter-spacing:.5px;">基本信息</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">客户姓名</label><input id="em-name" type="text" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">护照号</label><input id="em-passport" type="text" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">跟进人</label><input id="em-pic" type="text" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">项目内容</label><select id="em-project" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fff;"></select></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">代理名字</label><input id="em-agent" type="text" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">提交日期</label><input id="em-date" type="date" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#1E3A5F;margin-bottom:10px;letter-spacing:.5px;">财务信息</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">Pass To</label><input id="em-passto" type="text" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">Extra Fee</label><input id="em-extrafee" type="number" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">押金</label><input id="em-deposit" type="number" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">Cost Type</label><select id="em-costtype" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fff;"><option value="RM">RM</option><option value="RMB">RMB</option></select></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">卖价</label><input id="em-price" type="number" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">本钱</label><input id="em-cost" type="number" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">分成利润</label><input id="em-shareprofit" type="number" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#1E3A5F;margin-bottom:10px;letter-spacing:.5px;">其他</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">支付方式</label><input id="em-pay" type="text" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">签证有效期</label><input id="em-visadate" type="date" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">当前进度</label><select id="em-progress" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fff;"><option>待递交</option><option>待补资料</option><option>待处理</option><option>待付款</option><option>审批中</option><option>未贴签</option><option>已完成</option><option>已取消</option></select></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">状态</label><select id="em-status" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fff;"><option>未完成</option><option>已完成</option></select></div>
+        <div style="grid-column:1/-1;"><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">备注</label><input id="em-note" type="text" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #E5E7EB;padding-top:14px;">
+        <button onclick="closeEditModal()" style="padding:9px 22px;border:1px solid #D1D5DB;border-radius:8px;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">取消</button>
+        <button onclick="saveEditModal()" style="padding:9px 22px;border:none;border-radius:8px;background:#1E3A5F;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Emergency Side Panel -->
 <button id="emg-toggle-btn" onclick="toggleEmgPanel()" title="紧急处理">
   🚨<span id="emg-count-badge">0</span>
@@ -2634,8 +2864,8 @@ function refreshEmgPanel() {
 <script>
 // ── Download helpers ──────────────────────────────────────────
 function getVisibleRows() {
-  return Array.from(document.querySelectorAll('#cust-tbody tr')).filter(function(tr) {
-    return tr.style.display !== 'none';
+  return Array.from(document.querySelectorAll('#cust-tbody tr[data-sb-id]')).filter(function(tr) {
+    return tr.dataset.filtered !== '0';
   });
 }
 
@@ -2656,8 +2886,8 @@ function getRowData(tr) {
     cell(11), // Cost Type
     cell(12), // 卖价
     cell(13), // 本钱
-    cell(14), // 利润
-    cell(15), // 分成利润
+    cell(15), // 利润
+    cell(14), // 分成利润
     cell(16), // 备注
     cell(17), // 支付方式
     cell(18), // 签证有效期
@@ -2711,6 +2941,9 @@ function updateBonusMonth(val) {
     if (!submitDate || submitDate.length < 7) return;
     var dp = submitDate.split('-');
     if (parseInt(dp[0]) === y && parseInt(dp[1]) - 1 === m) {
+      var statusSel = tds[21] ? tds[21].querySelector('select') : null;
+      var statusVal = statusSel ? statusSel.value : '';
+      if (statusVal !== '已完成') return;
       var p = parseFloat((tds[15] ? tds[15].textContent.replace(/,/g,'') : '0')) || 0;
       totalProfit += p;
     }
@@ -2718,7 +2951,7 @@ function updateBonusMonth(val) {
   var bonus = Math.round(totalProfit * 0.1);
   var lbl = document.getElementById('bonus-month-label');
   var amt = document.getElementById('bonus-amount');
-  if (lbl) lbl.textContent = parts[0] + '年' + parts[1] + '月 总利润 × 10%';
+  if (lbl) lbl.textContent = parts[0] + '年' + parts[1] + '月 已完成订单利润 × 10%';
   if (amt) amt.textContent = bonus.toLocaleString();
 }
 (function() {
@@ -2834,7 +3067,7 @@ function syncDashboard() {
 
   if (!rows.length) {
     // No data yet — show zeros
-    ['dash-today-orders','dash-today-profit','dash-month-customers','dash-month-revenue','dash-month-profit',
+    ['dash-today-orders','dash-today-profit-rm','dash-today-profit-rmb','dash-month-customers','dash-month-revenue-rm','dash-month-revenue-rmb','dash-month-profit-rm','dash-month-profit-rmb',
      'dash-pending-submit','dash-pending-docs','dash-payment-due','dash-expire-30','dash-expire-60','dash-expire-90'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.textContent = '0';
@@ -2844,7 +3077,9 @@ function syncDashboard() {
 
   var totalRows = rows.length;
   var todayOrders = 0, todayProfit = 0;
+  var todayProfitRM = 0, todayProfitRMB = 0;
   var monthCustomers = 0, monthRevenue = 0, monthProfit = 0;
+  var monthRevenueRM = 0, monthRevenueRMB = 0, monthProfitRM = 0, monthProfitRMB = 0;
   var pendingSubmit = 0, pendingDocs = 0, pendingReview = 0, paymentDue = 0;
   var expire30 = 0, expire60 = 0, expire90 = 0;
   var incomplete = 0, complete = 0, monthNew = 0;
@@ -2867,11 +3102,14 @@ function syncDashboard() {
     var projName = projSel ? projSel.value : (tds[4] ? tds[4].textContent.trim() : '');
     var dateInput = tds[18] ? tds[18].querySelector('input[type="date"]') : null;
     var visaDate = dateInput ? dateInput.value : '';
+    var costTypeSel = tds[11] ? tds[11].querySelector('select') : null;
+    var costType = costTypeSel ? costTypeSel.value : 'RM';
 
     // Today stats
     if (submitDate === todayStr) {
       todayOrders++;
       todayProfit += profit;
+      if (costType === 'RMB') todayProfitRMB += profit; else todayProfitRM += profit;
     }
 
     // Month stats
@@ -2882,6 +3120,8 @@ function syncDashboard() {
         monthCustomers++;
         monthRevenue += sell;
         monthProfit += profit;
+        if (costType === 'RMB') { monthRevenueRMB += sell; monthProfitRMB += profit; }
+        else { monthRevenueRM += sell; monthProfitRM += profit; }
         monthNew++;
         if (projName) {
           if (!projMap[projName]) projMap[projName] = {count:0, amount:0};
@@ -2920,14 +3160,19 @@ function syncDashboard() {
 
   // Update dashboard
   setEl('dash-today-orders', todayOrders);
-  setEl('dash-today-profit', todayProfit.toLocaleString());
+  setEl('dash-today-profit-rm', todayProfitRM.toLocaleString());
+  setEl('dash-today-profit-rmb', todayProfitRMB.toLocaleString());
   setEl('dash-month-customers', monthCustomers);
-  setEl('dash-month-revenue', monthRevenue.toLocaleString());
-  setEl('dash-month-profit', monthProfit.toLocaleString());
+  setEl('dash-month-revenue-rm', monthRevenueRM.toLocaleString());
+  setEl('dash-month-revenue-rmb', monthRevenueRMB.toLocaleString());
+  setEl('dash-month-profit-rm', monthProfitRM.toLocaleString());
+  setEl('dash-month-profit-rmb', monthProfitRMB.toLocaleString());
   // 本月业绩 block
   setEl('dash-perf-orders', monthCustomers);
   setEl('dash-perf-revenue', monthRevenue.toLocaleString());
+  setEl('dash-perf-revenue-rmb', monthRevenueRMB.toLocaleString());
   setEl('dash-perf-profit', monthProfit.toLocaleString());
+  setEl('dash-perf-profit-rmb', monthProfitRMB.toLocaleString());
   var perfLabelEl = document.getElementById('dash-perf-month-label');
   if (perfLabelEl) perfLabelEl.textContent = monthLabel;
   setEl('dash-pending-submit', pendingSubmit);
@@ -2935,15 +3180,22 @@ function syncDashboard() {
   setEl('dash-pending-review', pendingReview);
   setEl('dash-payment-due', paymentDue);
   // Sum all balance values for 待付款预估
-  var paymentTotal = 0;
+  var paymentTotal = 0, paymentTotalRM = 0, paymentTotalRMB = 0;
   rows.forEach(function(tr) {
     var tds = tr.querySelectorAll('td');
     if (tds.length < 11) return;
     var bv = parseFloat((tds[10] ? tds[10].textContent.replace(/,/g,'') : '0')) || 0;
-    if (bv > 0) paymentTotal += bv;
+    if (bv > 0) {
+      paymentTotal += bv;
+      var ctSel = tds[11] ? tds[11].querySelector('select') : null;
+      var ct = ctSel ? ctSel.value : 'RM';
+      if (ct === 'RMB') paymentTotalRMB += bv; else paymentTotalRM += bv;
+    }
   });
   var ptEl = document.getElementById('dash-payment-total');
-  if (ptEl) ptEl.textContent = paymentTotal.toLocaleString();
+  if (ptEl) ptEl.textContent = paymentTotalRM.toLocaleString();
+  var ptRmbEl = document.getElementById('dash-payment-total-rmb');
+  if (ptRmbEl) ptRmbEl.textContent = paymentTotalRMB.toLocaleString();
   // Refresh bonus pool for currently selected month
   var bp = document.getElementById('bonus-month-picker');
   if (bp && bp.value && typeof updateBonusMonth === 'function') updateBonusMonth(bp.value);
@@ -2975,6 +3227,7 @@ function buildAndInsertCustRow(d, tbody) {
   var progOpts = progressOpts.map(function(o){ return '<option' + (o===(d.progress||'待递交')?' selected':'') + '>' + o + '</option>'; }).join('');
   var statOpts = statusOpts.map(function(o){ return '<option' + (o===(d.status||'未完成')?' selected':'') + '>' + o + '</option>'; }).join('');
   var isCompleted = (d.status === '已完成');
+  var isPendingSubmit = ((d.progress||'待递交') === '待递交');
   var rowCount = 0; // will be set by renumberRows()
   var depositVal = parseFloat(d.deposit) || 0;
   var priceVal = parseFloat(d.price) || 0;
@@ -3010,7 +3263,7 @@ function buildAndInsertCustRow(d, tbody) {
     '<td>' + (d.payment||'-') + '</td>' +
     '<td class="date-cell"><input type="date" value="' + (d.visa_date||'') + '"></td>' +
     '<td class="valid-days">-</td>' +
-    '<td><select class="progress-sel">' + progOpts + '</select></td>' +
+    '<td><select class="progress-sel' + (isPendingSubmit?' is-urgent':'') + '">' + progOpts + '</select></td>' +
     '<td><select class="status-sel ' + (isCompleted?'is-done':'is-pending') + '">' + statOpts + '</select></td>' +
     '<td style="text-align:center;"><button class="emg-btn' + (isUrgent ? ' active' : '') + '" onclick="toggleEmergency(this)" title="标记紧急处理">🚨</button></td>' +
     '<td style="text-align:center;"><button onclick="deleteCustomerRow(this)" style="background:#EF4444;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;">删除</button></td>';
@@ -3126,7 +3379,13 @@ function wireRowEvents(tr) {
   var ctSel = tr.querySelector('.cost-type-sel');
   var projSel = tr.querySelector('.proj-sel');
   var dateInput = tr.querySelector('input[type="date"]');
-  [progSel, ctSel, projSel].forEach(function(sel) {
+  if (progSel && typeof updateProgressColor==='function') updateProgressColor(progSel);
+  if (progSel) progSel.addEventListener('change', function(){
+    if(typeof updateProgressColor==='function') updateProgressColor(progSel);
+    window.saveFullRowToStorage(tr);
+    if(typeof syncDashboard==='function') syncDashboard();
+  });
+  [ctSel, projSel].forEach(function(sel) {
     if (sel) sel.addEventListener('change', function(){ window.saveFullRowToStorage(tr); if(typeof syncDashboard==='function') syncDashboard(); });
   });
   if (statSel) statSel.addEventListener('change', function(){
