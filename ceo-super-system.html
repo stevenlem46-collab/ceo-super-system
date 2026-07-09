@@ -2252,7 +2252,7 @@ async function saveNewCustomer() {
   /* Google Sheets 同步已移除（旧系统专用） */
   // 同时存入 Supabase
   sbInsert('customers', custData).then(function(res){
-    if (res && res[0] && res[0].id) { tr.dataset.custId = res[0].id; }
+    if (res && res[0] && res[0].id) { tr.dataset.custId = res[0].id; tr.dataset.sbId = res[0].id; }
   });
   var newId = 'cust_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
   tr.dataset.custId = newId;
