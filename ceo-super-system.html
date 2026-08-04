@@ -625,7 +625,12 @@
   </div>
   <div class="topbar-icons">
     <div class="topbar-icon">🔍</div>
-    <div class="topbar-icon">🔔 <span class="badge">1</span></div>
+    <div class="topbar-icon" id="notif-bell-wrap" style="position:relative;" onclick="toggleNotifPanel(event)">🔔 <span class="badge" id="notif-badge" style="display:none;">0</span>
+      <div id="notif-panel" style="display:none;position:absolute;top:30px;right:-10px;width:270px;background:#fff;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,0.3);z-index:99999;overflow:hidden;color:#1E293B;">
+        <div style="padding:12px 16px;font-weight:700;font-size:13px;border-bottom:1px solid #E2E8F0;background:#F8FAFC;">🔔 待处理提醒</div>
+        <div id="notif-list"></div>
+      </div>
+    </div>
     <div class="doraemon-small" id="dora-topbar"></div>
     <div class="user-tag" id="role-tag">管理员 ▾</div>
         <button id="change-pw-btn" onclick="openChangePwModal()" style="display:none;background:rgba(37,99,235,0.15);color:#93C5FD;border:1px solid rgba(37,99,235,0.3);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:6px;">🔑 改密码</button>
@@ -2453,6 +2458,7 @@ var _custFilterProject = '';
 var _custCurrentPage = 1;
 var _custSelectedIds = new Set();
 var _custShowSelectedOnly = false;
+var _custNotifFilter = null;
 var CUST_PAGE_SIZE = 100;
 
 function filterCustomers() {
@@ -2483,7 +2489,27 @@ function filterCustomers() {
     var matchProject = !_custFilterProject || projVal === _custFilterProject;
     // 只看已选
     var matchSelected = !_custShowSelectedOnly || _custSelectedIds.has(tr.dataset.sbId);
-    tr.dataset.filtered = (matchKeyword && matchMonth && matchStatus && matchProject && matchSelected) ? '1' : '0';
+    // 通知快捷筛选
+    var matchNotif = true;
+    if (_custNotifFilter === 'submit') {
+      matchNotif = progressVal === '待递交';
+    } else if (_custNotifFilter === 'docs') {
+      matchNotif = progressVal === '待补资料';
+    } else if (_custNotifFilter === 'payment') {
+      var balTxt = tds[10] ? tds[10].textContent.replace(/,/g,'') : '0';
+      matchNotif = (parseFloat(balTxt) || 0) > 0;
+    } else if (_custNotifFilter === 'expire30') {
+      var dInput = tr.querySelector('input[type="date"]');
+      var vDate = dInput ? dInput.value : '';
+      matchNotif = false;
+      if (vDate) {
+        var expD = new Date(vDate); expD.setHours(0,0,0,0);
+        var todayD = new Date(); todayD.setHours(0,0,0,0);
+        var diffD = Math.round((expD - todayD) / 86400000);
+        matchNotif = diffD >= 0 && diffD <= 30;
+      }
+    }
+    tr.dataset.filtered = (matchKeyword && matchMonth && matchStatus && matchProject && matchSelected && matchNotif) ? '1' : '0';
   });
   _custCurrentPage = 1;
   updatePagination();
@@ -2528,11 +2554,13 @@ function custGoPage(p) {
 
 function filterByMonth(ym) {
   _custFilterMonth = ym || '';
+  _custNotifFilter = null;
   filterCustomers();
 }
 
 function filterByStatus(status, btn) {
   _custFilterStatus = status;
+  _custNotifFilter = null;
   // Update active tab
   document.querySelectorAll('.tab-group .tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -2542,6 +2570,64 @@ function filterByStatus(status, btn) {
 
 function filterByProject(proj) {
   _custFilterProject = proj;
+  _custNotifFilter = null;
+  filterCustomers();
+}
+
+function toggleNotifPanel(e) {
+  if (e) e.stopPropagation();
+  var panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+document.addEventListener('click', function(e) {
+  var panel = document.getElementById('notif-panel');
+  var wrap = document.getElementById('notif-bell-wrap');
+  if (panel && panel.style.display === 'block' && wrap && !wrap.contains(e.target)) {
+    panel.style.display = 'none';
+  }
+});
+
+function updateNotifPanel() {
+  function num(id) {
+    var el = document.getElementById(id);
+    return el ? (parseInt((el.textContent || '0').replace(/[^0-9]/g,'')) || 0) : 0;
+  }
+  var expire30 = num('dash-expire-30');
+  var paymentDue = num('dash-payment-due');
+  var pendingSubmit = num('dash-pending-submit');
+  var pendingDocs = num('dash-pending-docs');
+  var total = expire30 + paymentDue + pendingSubmit + pendingDocs;
+  var badge = document.getElementById('notif-badge');
+  if (badge) { badge.textContent = total; badge.style.display = total > 0 ? 'flex' : 'none'; }
+  var listEl = document.getElementById('notif-list');
+  if (!listEl) return;
+  var items = [
+    { type: 'expire30', icon: '🔴', label: '30天内签证到期', count: expire30 },
+    { type: 'payment', icon: '🟡', label: '待付尾款', count: paymentDue },
+    { type: 'submit', icon: '🔵', label: '待递交', count: pendingSubmit },
+    { type: 'docs', icon: '⚪', label: '待补资料', count: pendingDocs }
+  ];
+  var rowsHtml = items.filter(function(it){ return it.count > 0; }).map(function(it) {
+    return '<div onclick="applyNotifFilter(\'' + it.type + '\')" style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;border-bottom:1px solid #F1F5F9;">' +
+      '<span>' + it.icon + ' ' + it.label + '</span><span style="font-weight:700;color:#2563EB;">' + it.count + ' 位</span></div>';
+  }).join('');
+  listEl.innerHTML = rowsHtml || '<div style="padding:20px;text-align:center;color:#94A3B8;font-size:13px;">🎉 暂无待处理事项</div>';
+}
+
+function applyNotifFilter(type) {
+  var panel = document.getElementById('notif-panel');
+  if (panel) panel.style.display = 'none';
+  if (typeof showPage === 'function') showPage('customers', null);
+  _custFilterStatus = '全部';
+  document.querySelectorAll('.tab-group .tab').forEach(function(b){ b.classList.remove('active'); });
+  var firstTab = document.querySelector('.tab-group .tab');
+  if (firstTab) firstTab.classList.add('active');
+  _custFilterProject = '';
+  var projSel = document.getElementById('cust-proj-filter'); if (projSel) projSel.value = '';
+  _custFilterMonth = '';
+  var monthSel = document.getElementById('month-filter-sel'); if (monthSel) monthSel.value = '';
+  _custNotifFilter = type;
   filterCustomers();
 }
 
@@ -3199,6 +3285,7 @@ function syncDashboard() {
       var el = document.getElementById(id);
       if (el) el.textContent = '0';
     });
+    if (typeof updateNotifPanel === 'function') updateNotifPanel();
     return;
   }
 
@@ -3344,6 +3431,7 @@ function syncDashboard() {
       return '<div class="proj-card"><span class="proj-icon">📋</span><div><div class="proj-name">' + name + '</div><div class="proj-month-num">本月 ' + d.count + ' 单</div><div class="proj-month-myr">MYR ' + d.amount.toLocaleString() + '</div></div></div>';
     }).join('');
   }
+  if (typeof updateNotifPanel === 'function') updateNotifPanel();
 }
 
 function buildAndInsertCustRow(d, tbody) {
