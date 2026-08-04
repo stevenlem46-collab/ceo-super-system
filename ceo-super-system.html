@@ -628,6 +628,7 @@
     <div class="topbar-icon">🔔 <span class="badge">1</span></div>
     <div class="doraemon-small" id="dora-topbar"></div>
     <div class="user-tag" id="role-tag">管理员 ▾</div>
+        <button id="change-pw-btn" onclick="openChangePwModal()" style="display:none;background:rgba(37,99,235,0.15);color:#93C5FD;border:1px solid rgba(37,99,235,0.3);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:6px;">🔑 改密码</button>
         <button id="logout-btn" onclick="doLogout()" style="display:none;background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:6px;">退出登录</button>
   </div>
 </div>
@@ -1178,6 +1179,22 @@
     <div class="modal-footer" style="margin-top:16px;">
       <button class="btn-secondary" onclick="document.getElementById('modal-claim-access').classList.remove('open');document.getElementById('claim-access-pw').value='';">取消</button>
       <button class="btn-primary" onclick="confirmClaimAccess()">进入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: CHANGE PASSWORD ── -->
+<div class="modal-overlay" id="modal-change-pw">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🔑 修改密码</div>
+    <div class="form-row"><label class="form-label">当前密码</label><input class="form-input" type="password" id="cpw-old" autocomplete="off"></div>
+    <div class="form-row"><label class="form-label">新密码</label><input class="form-input" type="password" id="cpw-new" autocomplete="off"></div>
+    <div class="form-row"><label class="form-label">确认新密码</label><input class="form-input" type="password" id="cpw-new2" autocomplete="off" onkeydown="if(event.key==='Enter')submitChangePw()"></div>
+    <div id="cpw-err" style="color:#EF4444;font-size:12px;display:none;">❌</div>
+    <div id="cpw-ok" style="color:#059669;font-size:12px;display:none;">✅ 密码已更新</div>
+    <div class="modal-footer" style="margin-top:6px;">
+      <button class="btn-secondary" onclick="closeChangePwModal()">取消</button>
+      <button class="btn-primary" onclick="submitChangePw()">保存</button>
     </div>
   </div>
 </div>
@@ -2974,6 +2991,58 @@ var AGENT_PW = 'daili888'; // agents use this
 var STAFF_PW = 'staff888'; // staff claim use this
 var STAFF_LOGIN_PW = 'yuangong888'; // 新增：员工/客服登录，看不到营业额/利润
 
+// 从 Supabase 读取最新密码（覆盖上面的默认值），确保改密码后长期生效
+(function loadPasswordsFromSupabase(){
+  sbSelect('app_passwords').then(function(rows){
+    if (!rows || !rows.length) return;
+    rows.forEach(function(r){
+      if (r.role === 'admin' && r.password) ADMIN_PW = r.password;
+      if (r.role === 'agent' && r.password) AGENT_PW = r.password;
+      if (r.role === 'staff' && r.password) STAFF_LOGIN_PW = r.password;
+    });
+  }).catch(function(){});
+})();
+
+function openChangePwModal(){
+  document.getElementById('cpw-old').value = '';
+  document.getElementById('cpw-new').value = '';
+  document.getElementById('cpw-new2').value = '';
+  document.getElementById('cpw-err').style.display = 'none';
+  document.getElementById('cpw-ok').style.display = 'none';
+  document.getElementById('modal-change-pw').classList.add('open');
+  setTimeout(function(){ document.getElementById('cpw-old').focus(); }, 100);
+}
+function closeChangePwModal(){
+  document.getElementById('modal-change-pw').classList.remove('open');
+}
+async function submitChangePw(){
+  var role = sessionStorage.getItem('xdd_role');
+  var errEl = document.getElementById('cpw-err');
+  var okEl = document.getElementById('cpw-ok');
+  okEl.style.display = 'none';
+  function showErr(msg){ errEl.textContent = msg; errEl.style.display = 'block'; }
+  if (!role) { showErr('❌ 请先登录'); return; }
+  var oldPw = document.getElementById('cpw-old').value.trim();
+  var newPw = document.getElementById('cpw-new').value.trim();
+  var newPw2 = document.getElementById('cpw-new2').value.trim();
+  var curPw = role === 'admin' ? ADMIN_PW : (role === 'agent' ? AGENT_PW : STAFF_LOGIN_PW);
+  if (oldPw !== curPw) { showErr('❌ 当前密码不正确'); return; }
+  if (!newPw || newPw.length < 4) { showErr('❌ 新密码至少 4 位'); return; }
+  if (newPw !== newPw2) { showErr('❌ 两次输入的新密码不一致'); return; }
+  errEl.style.display = 'none';
+  try {
+    var r = await fetch(SB_URL + '/rest/v1/app_passwords?role=eq.' + encodeURIComponent(role), {
+      method: 'PATCH', headers: SB_H, body: JSON.stringify({ password: newPw })
+    });
+    if (!r.ok) { showErr('❌ 保存失败，请重试'); return; }
+  } catch(e) { showErr('❌ 网络错误，请重试'); return; }
+  if (role === 'admin') ADMIN_PW = newPw;
+  else if (role === 'agent') AGENT_PW = newPw;
+  else STAFF_LOGIN_PW = newPw;
+  okEl.style.display = 'block';
+  setTimeout(closeChangePwModal, 1200);
+}
+
 function doLogin() {
   var pw = (document.getElementById('login-pw').value || '').trim();
   var err = document.getElementById('login-error');
@@ -2998,6 +3067,8 @@ function applyRole(role) {
   if (overlay) overlay.style.display = 'none';
   var logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.style.display = 'inline-block';
+  var changePwBtn = document.getElementById('change-pw-btn');
+  if (changePwBtn) changePwBtn.style.display = 'inline-block';
   var roleTag = document.getElementById('role-tag');
   if (role === 'agent') {
     if (roleTag) roleTag.textContent = '代理';
