@@ -699,13 +699,13 @@
           <div class="stat-value"><span id="dash-month-customers">0</span> <span style="font-size:14px;font-weight:500">位</span></div>
           <div class="stat-compare" id="dash-month-label">当前月份数据</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="dash-revenue-card">
           <div class="stat-card-top"><span class="stat-icon">📈</span><span class="stat-label">本月营业额</span></div>
           <div class="stat-value big">RM <span id="dash-month-revenue-rm">0</span></div>
           <div style="font-size:15px;color:#F59E0B;font-weight:700;margin-top:2px;">RMB <span id="dash-month-revenue-rmb">0</span></div>
           <div class="stat-compare" id="dash-month-revenue-label">当前月份数据</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="dash-profit-card">
           <div class="stat-card-top"><span class="stat-icon">💰</span><span class="stat-label">本月总利润</span></div>
           <div class="stat-value big">RM <span id="dash-month-profit-rm">0</span></div>
           <div style="font-size:15px;color:#F59E0B;font-weight:700;margin-top:2px;">RMB <span id="dash-month-profit-rmb">0</span></div>
@@ -810,13 +810,13 @@
             <div style="font-size:32px;font-weight:800;color:#fff;"><span id="dash-perf-orders">0</span></div>
             <div style="font-size:12px;color:#7dd3fc;margin-top:2px;">单</div>
           </div>
-          <div style="background:rgba(255,255,255,0.07);border-radius:12px;padding:16px;text-align:center;">
+          <div style="background:rgba(255,255,255,0.07);border-radius:12px;padding:16px;text-align:center;" id="dash-perf-revenue-card">
             <div style="font-size:12px;color:#93c5fd;font-weight:600;margin-bottom:6px;">本月营业额</div>
             <div style="font-size:22px;font-weight:800;color:#34d399;">MYR <span id="dash-perf-revenue">0</span></div>
             <div style="font-size:15px;font-weight:700;color:#F59E0B;margin-top:2px;">RMB <span id="dash-perf-revenue-rmb">0</span></div>
             <div style="font-size:12px;color:#7dd3fc;margin-top:2px;">总卖价</div>
           </div>
-          <div style="background:rgba(255,255,255,0.07);border-radius:12px;padding:16px;text-align:center;">
+          <div style="background:rgba(255,255,255,0.07);border-radius:12px;padding:16px;text-align:center;" id="dash-perf-profit-card">
             <div style="font-size:12px;color:#93c5fd;font-weight:600;margin-bottom:6px;">本月利润</div>
             <div style="font-size:22px;font-weight:800;color:#fbbf24;">MYR <span id="dash-perf-profit">0</span></div>
             <div style="font-size:15px;font-weight:700;color:#F59E0B;margin-top:2px;">RMB <span id="dash-perf-profit-rmb">0</span></div>
@@ -2972,6 +2972,7 @@ function updateBonusMonth(val) {
 var ADMIN_PW = 'admin888';
 var AGENT_PW = 'daili888'; // agents use this
 var STAFF_PW = 'staff888'; // staff claim use this
+var STAFF_LOGIN_PW = 'yuangong888'; // 新增：员工/客服登录，看不到营业额/利润
 
 function doLogin() {
   var pw = (document.getElementById('login-pw').value || '').trim();
@@ -2982,6 +2983,9 @@ function doLogin() {
   } else if (pw === AGENT_PW) {
     sessionStorage.setItem('xdd_role', 'agent');
     applyRole('agent');
+  } else if (pw === STAFF_LOGIN_PW) {
+    sessionStorage.setItem('xdd_role', 'staff');
+    applyRole('staff');
   } else {
     if (err) { err.style.display = 'block'; setTimeout(function(){ err.style.display = 'none'; }, 3000); }
     document.getElementById('login-pw').value = '';
@@ -3008,10 +3012,18 @@ function applyRole(role) {
     if (typeof showPage === 'function') showPage('addcustomer');
     var banner = document.querySelector('.announce-bar');
     if (banner) banner.style.display = 'none';
+  } else if (role === 'staff') {
+    if (roleTag) roleTag.textContent = '员工 ▾';
+    if (typeof showPage === 'function') showPage('dashboard');
   } else {
     if (roleTag) roleTag.textContent = '管理员 ▾';
     if (typeof showPage === 'function') showPage('dashboard');
   }
+  // 员工账号：隐藏营业额/利润相关卡片
+  ['dash-revenue-card','dash-profit-card','dash-perf-revenue-card','dash-perf-profit-card'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.style.display = (role === 'staff') ? 'none' : '';
+  });
 }
 
 function doLogout() {
