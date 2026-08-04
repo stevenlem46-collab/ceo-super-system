@@ -2442,10 +2442,12 @@ function filterCustomers() {
   document.querySelectorAll('#cust-tbody tr').forEach(function(tr) {
     var tds = tr.querySelectorAll('td');
     if (tds.length < 5) return; // skip placeholder rows
-    // keyword match: name(1), passport(2), project(4), agent(5)
+    // keyword match: name(1), passport(2), project(4, select), agent(5)
     var name = tds[1] ? tds[1].textContent.trim().toLowerCase() : '';
     var passport = tds[2] ? tds[2].textContent.trim().toLowerCase() : '';
-    var project = tds[4] ? tds[4].textContent.trim().toLowerCase() : '';
+    var projSelForFilter = tr.querySelector('.proj-sel');
+    var projVal = projSelForFilter ? projSelForFilter.value : (tds[4] ? tds[4].textContent.trim() : '');
+    var project = projVal.toLowerCase();
     var agent = tds[5] ? tds[5].textContent.trim().toLowerCase() : '';
     var matchKeyword = !keyword || name.includes(keyword) || passport.includes(keyword) || project.includes(keyword) || agent.includes(keyword);
     // month match: col 6
@@ -2457,8 +2459,7 @@ function filterCustomers() {
     var progressSel = tr.querySelector('.progress-sel');
     var progressVal = progressSel ? progressSel.value : '';
     var matchStatus = (status === '全部') || (status === '待递交' ? progressVal === '待递交' : statusVal === status);
-    // project match
-    var projVal = tds[4] ? tds[4].textContent.trim() : '';
+    // project match (compare against selected dropdown value, not raw textContent)
     var matchProject = !_custFilterProject || projVal === _custFilterProject;
     tr.dataset.filtered = (matchKeyword && matchMonth && matchStatus && matchProject) ? '1' : '0';
   });
