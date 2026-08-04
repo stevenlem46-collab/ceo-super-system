@@ -875,6 +875,7 @@
         </div>
         <select class="filter-select" id="cust-proj-filter" onchange="filterByProject(this.value)"><option value="">项目内容</option></select>
         <select class="filter-select" id="month-filter-sel" onchange="filterByMonth(this.value)"><option value="">月份</option></select>
+        <button class="btn-secondary" id="cust-selonly-btn" onclick="toggleShowSelectedOnly()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;opacity:0.55;"><span id="cust-selonly-label">☑ 只看已选</span> (<span id="cust-sel-count">0</span>)</button>
         <button class="btn-primary" onclick="showPage('addcustomer',null)">➕ 新增客户</button>
         <button class="btn-secondary" onclick="downloadCSV()" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">⬇ CSV</button>
         <button class="btn-secondary" onclick="downloadExcel()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Excel</button>
@@ -886,7 +887,7 @@
           <table>
             <thead>
               <tr>
-                <th style="width:42px;text-align:center;">NO.</th><th>客户姓名</th><th>护照号</th><th>跟进人</th><th>项目内容</th><th>代理名字</th>
+                <th style="width:64px;text-align:center;"><input type="checkbox" id="cust-select-all-cb" onchange="toggleSelectAllVisible(this)" title="全选/取消全选（当前筛选结果）" style="cursor:pointer;vertical-align:middle;margin-right:2px;">NO.</th><th>客户姓名</th><th>护照号</th><th>跟进人</th><th>项目内容</th><th>代理名字</th>
                 <th>提交日期</th><th>Pass To</th><th>Extra Fee</th><th>押金</th><th>待付款 ⚡</th>
                 <th>Cost Type</th><th>卖价</th><th>本钱</th><th>分成利润</th><th>利润 ⚡</th>
                 <th>备注</th><th>支付方式</th><th>签证有效期</th><th>VALID</th><th>当前进度</th><th>状态</th><th>紧急</th>
@@ -2201,7 +2202,7 @@ async function saveNewCustomer() {
   const projOpts = projOptions.map(p => `<option${p===project?' selected':''}>${p}</option>`).join('');
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td style="text-align:center;font-weight:600;color:var(--accent);font-size:13px;">${rowCount}</td>
+    <td style="text-align:center;"><input type="checkbox" class="row-select-cb" onchange="toggleRowSelect(this)" style="cursor:pointer;vertical-align:middle;margin-right:4px;"><span class="row-no" style="font-weight:600;color:var(--accent);font-size:13px;vertical-align:middle;">${rowCount}</span></td>
     <td>${name}</td>
     <td>${passport}</td>
     <td></td>
@@ -2450,6 +2451,8 @@ var _custFilterStatus = '全部';
 var _custFilterMonth = '';
 var _custFilterProject = '';
 var _custCurrentPage = 1;
+var _custSelectedIds = new Set();
+var _custShowSelectedOnly = false;
 var CUST_PAGE_SIZE = 100;
 
 function filterCustomers() {
@@ -2478,7 +2481,9 @@ function filterCustomers() {
     var matchStatus = (status === '全部') || (status === '待递交' ? progressVal === '待递交' : statusVal === status);
     // project match (compare against selected dropdown value, not raw textContent)
     var matchProject = !_custFilterProject || projVal === _custFilterProject;
-    tr.dataset.filtered = (matchKeyword && matchMonth && matchStatus && matchProject) ? '1' : '0';
+    // 只看已选
+    var matchSelected = !_custShowSelectedOnly || _custSelectedIds.has(tr.dataset.sbId);
+    tr.dataset.filtered = (matchKeyword && matchMonth && matchStatus && matchProject && matchSelected) ? '1' : '0';
   });
   _custCurrentPage = 1;
   updatePagination();
@@ -2538,6 +2543,44 @@ function filterByStatus(status, btn) {
 function filterByProject(proj) {
   _custFilterProject = proj;
   filterCustomers();
+}
+
+function toggleRowSelect(cb) {
+  var tr = cb.closest('tr');
+  if (!tr) return;
+  var id = tr.dataset.sbId;
+  if (!id) return;
+  if (cb.checked) _custSelectedIds.add(id); else _custSelectedIds.delete(id);
+  updateSelectedCountUI();
+  if (_custShowSelectedOnly) filterCustomers();
+}
+
+function updateSelectedCountUI() {
+  var el = document.getElementById('cust-sel-count');
+  if (el) el.textContent = _custSelectedIds.size;
+}
+
+function toggleShowSelectedOnly() {
+  _custShowSelectedOnly = !_custShowSelectedOnly;
+  var btn = document.getElementById('cust-selonly-btn');
+  var label = document.getElementById('cust-selonly-label');
+  if (btn) btn.style.opacity = _custShowSelectedOnly ? '1' : '0.55';
+  if (label) label.textContent = _custShowSelectedOnly ? '👁 显示全部' : '☑ 只看已选';
+  filterCustomers();
+}
+
+function toggleSelectAllVisible(cb) {
+  var checked = cb.checked;
+  document.querySelectorAll('#cust-tbody tr[data-sb-id]').forEach(function(tr) {
+    if (tr.dataset.filtered === '0') return; // 只影响当前筛选结果里的行
+    var id = tr.dataset.sbId;
+    if (!id) return;
+    var rowCb = tr.querySelector('.row-select-cb');
+    if (rowCb) rowCb.checked = checked;
+    if (checked) _custSelectedIds.add(id); else _custSelectedIds.delete(id);
+  });
+  updateSelectedCountUI();
+  if (_custShowSelectedOnly) filterCustomers();
 }
 
 
@@ -3327,7 +3370,7 @@ function buildAndInsertCustRow(d, tbody) {
   if (isCompleted) tr.classList.add('row-done');
   if (isUrgent) tr.classList.add('emg-row');
   tr.innerHTML =
-    '<td style="text-align:center;font-weight:600;color:var(--accent);font-size:13px;">' + rowCount + '</td>' +
+    '<td style="text-align:center;"><input type="checkbox" class="row-select-cb" onchange="toggleRowSelect(this)" style="cursor:pointer;vertical-align:middle;margin-right:4px;"><span class="row-no" style="font-weight:600;color:var(--accent);font-size:13px;vertical-align:middle;">' + rowCount + '</span></td>' +
     '<td>' + (d.name||'') + '</td>' +
     '<td>' + (d.passport||'') + '</td>' +
     '<td>' + (d.followup||'') + '</td>' +
@@ -3383,7 +3426,8 @@ function renumberRows() {
   var allRows = Array.from(tbody.querySelectorAll('tr'));
   var total = allRows.length;
   allRows.forEach(function(tr, i) {
-    if (tr.cells[0]) tr.cells[0].textContent = total - i;
+    var numEl = tr.cells[0] ? tr.cells[0].querySelector('.row-no') : null;
+    if (numEl) numEl.textContent = total - i;
   });
 }
 
