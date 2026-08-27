@@ -301,6 +301,8 @@
     box-shadow: 0 0 0 2px #FCA5A5; }
   tr.emg-row { background: linear-gradient(90deg, #FFF1F2 0%, #FFF 100%) !important; }
   tr.emg-row td { border-left: 3px solid #EF4444 !important; }
+  tr.row-unpaid-warn { background: linear-gradient(90deg, #FFFBEB 0%, #FFF 100%) !important; }
+  tr.row-unpaid-warn td { border-left: 3px solid #F59E0B !important; }
 
   /* 冻结列：客户表格 NO. / 客户姓名 / 护照号 三栏左侧固定，横向滚动时保持可见 */
   #cust-table-wrap th:nth-child(1), #cust-table-wrap td:nth-child(1),
@@ -3352,6 +3354,10 @@ function syncDashboard() {
     var balanceTxt = tds[10] ? tds[10].textContent.replace(/,/g,'').trim() : '0';
     var balanceVal = parseFloat(balanceTxt) || 0;
     if (balanceVal > 0) paymentDue++;
+    // 已完成但还没收全款 —— 高亮提醒
+    var isUnpaidWarn = (status === '已完成' && balanceVal > 0);
+    tr.classList.toggle('row-unpaid-warn', isUnpaidWarn);
+    tr.title = isUnpaidWarn ? '⚠️ 已完成但尚未收全款' : '';
 
     // Status
     if (status === '未完成') incomplete++;
