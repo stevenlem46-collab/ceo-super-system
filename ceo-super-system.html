@@ -676,8 +676,12 @@
     <!-- ══ PAGE: DASHBOARD ══ -->
     <div class="page active" id="page-dashboard">
       <!-- Month picker -->
-      <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;gap:8px;">
-        <span style="font-size:13px;color:rgba(255,255,255,0.6);font-weight:600;">查看月份：</span>
+      <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:13px;color:rgba(255,255,255,0.6);font-weight:600;">查看日期：</span>
+        <input type="date" id="dash-day-picker"
+          style="border:1.5px solid rgba(255,255,255,0.25);border-radius:8px;padding:5px 12px;font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.1);cursor:pointer;outline:none;font-family:inherit;"
+          onchange="syncDashboard()">
+        <span style="font-size:13px;color:rgba(255,255,255,0.6);font-weight:600;margin-left:8px;">查看月份：</span>
         <input type="month" id="dash-month-picker"
           style="border:1.5px solid rgba(255,255,255,0.25);border-radius:8px;padding:5px 12px;font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.1);cursor:pointer;outline:none;font-family:inherit;"
           onchange="syncDashboard()">
@@ -3247,8 +3251,15 @@ function syncDashboard() {
   var nowYear = now.getFullYear();
   var nowMonth = now.getMonth();
   var thisDate = now.getDate();
-  var todayStr = nowYear + '-' + String(nowMonth+1).padStart(2,'0') + '-' + String(thisDate).padStart(2,'0');
-  var today = new Date(nowYear, nowMonth, thisDate); // local midnight, no UTC shift
+  var today = new Date(nowYear, nowMonth, thisDate); // 真正的今天，签证到期天数等计算固定用这个，不受下面的日期选择器影响
+  var realTodayStr = nowYear + '-' + String(nowMonth+1).padStart(2,'0') + '-' + String(thisDate).padStart(2,'0');
+
+  // "今日" 卡片可切换查看某一天，默认就是今天
+  var dayPicker = document.getElementById('dash-day-picker');
+  if (dayPicker && !dayPicker.value) dayPicker.value = realTodayStr;
+  var todayStr = (dayPicker && dayPicker.value) ? dayPicker.value : realTodayStr;
+  var viewDateParts = todayStr.split('-');
+  var viewDate = new Date(parseInt(viewDateParts[0]), parseInt(viewDateParts[1]) - 1, parseInt(viewDateParts[2]));
 
   // Read month picker for monthly stats
   var dashPicker = document.getElementById('dash-month-picker');
@@ -3268,7 +3279,7 @@ function syncDashboard() {
   var dateEl = document.getElementById('dash-today-date');
   if (dateEl) dateEl.textContent = todayStr;
   var wdEl = document.getElementById('dash-today-weekday');
-  if (wdEl) wdEl.textContent = weekdays[today.getDay()];
+  if (wdEl) wdEl.textContent = weekdays[viewDate.getDay()];
 
   // Month label
   var monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
