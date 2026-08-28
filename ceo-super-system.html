@@ -301,8 +301,6 @@
     box-shadow: 0 0 0 2px #FCA5A5; }
   tr.emg-row { background: linear-gradient(90deg, #FFF1F2 0%, #FFF 100%) !important; }
   tr.emg-row td { border-left: 3px solid #EF4444 !important; }
-  tr.row-unpaid-warn { background: linear-gradient(90deg, #FFFBEB 0%, #FFF 100%) !important; }
-  tr.row-unpaid-warn td { border-left: 3px solid #F59E0B !important; }
 
   /* 冻结列：客户表格 NO. / 客户姓名 / 护照号 三栏左侧固定，横向滚动时保持可见 */
   #cust-table-wrap th:nth-child(1), #cust-table-wrap td:nth-child(1),
@@ -3320,12 +3318,18 @@ function syncDashboard() {
     var visaDate = dateInput ? dateInput.value : '';
     var costTypeSel = tds[11] ? tds[11].querySelector('select') : null;
     var costType = costTypeSel ? costTypeSel.value : 'RM';
+    var balanceTxt = tds[10] ? tds[10].textContent.replace(/,/g,'').trim() : '0';
+    var balanceVal = parseFloat(balanceTxt) || 0;
+    // 已完成但尾款还没收完 —— 这笔利润先不计入统计（收完款会自动补回）
+    var excludeFromProfit = (status === '已完成' && balanceVal > 0);
 
     // Today stats
     if (submitDate === todayStr) {
       todayOrders++;
-      todayProfit += profit;
-      if (costType === 'RMB') todayProfitRMB += profit; else todayProfitRM += profit;
+      if (!excludeFromProfit) {
+        todayProfit += profit;
+        if (costType === 'RMB') todayProfitRMB += profit; else todayProfitRM += profit;
+      }
     }
 
     // Month stats
@@ -3335,9 +3339,11 @@ function syncDashboard() {
       if (y === thisYear && m === thisMonth) {
         monthCustomers++;
         monthRevenue += sell;
-        monthProfit += profit;
-        if (costType === 'RMB') { monthRevenueRMB += sell; monthProfitRMB += profit; }
-        else { monthRevenueRM += sell; monthProfitRM += profit; }
+        if (costType === 'RMB') monthRevenueRMB += sell; else monthRevenueRM += sell;
+        if (!excludeFromProfit) {
+          monthProfit += profit;
+          if (costType === 'RMB') monthProfitRMB += profit; else monthProfitRM += profit;
+        }
         monthNew++;
         if (projName) {
           if (!projMap[projName]) projMap[projName] = {count:0, amount:0};
@@ -3351,13 +3357,7 @@ function syncDashboard() {
     if (progress === '待递交') pendingSubmit++;
     if (progress === '待补资料') pendingDocs++;
     if (progress === '审批中') pendingReview++;
-    var balanceTxt = tds[10] ? tds[10].textContent.replace(/,/g,'').trim() : '0';
-    var balanceVal = parseFloat(balanceTxt) || 0;
     if (balanceVal > 0) paymentDue++;
-    // 已完成但还没收全款 —— 高亮提醒
-    var isUnpaidWarn = (status === '已完成' && balanceVal > 0);
-    tr.classList.toggle('row-unpaid-warn', isUnpaidWarn);
-    tr.title = isUnpaidWarn ? '⚠️ 已完成但尚未收全款' : '';
 
     // Status
     if (status === '未完成') incomplete++;
