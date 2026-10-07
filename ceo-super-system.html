@@ -901,13 +901,13 @@
             <thead>
               <tr>
                 <th style="width:64px;text-align:center;"><input type="checkbox" id="cust-select-all-cb" onchange="toggleSelectAllVisible(this)" title="全选/取消全选（当前筛选结果）" style="cursor:pointer;vertical-align:middle;margin-right:2px;">NO.</th><th>客户姓名</th><th>护照号</th><th>跟进人</th><th>项目内容</th><th>代理名字</th>
-                <th>提交日期</th><th>Pass To</th><th>Extra Fee</th><th>押金</th><th>待付款 ⚡</th>
+                <th>提交日期</th><th>Pass To</th><th>Extra Fee</th><th>押金</th><th>待付款 ⚡</th><th>尾款完成项目</th>
                 <th>Cost Type</th><th>卖价</th><th>本钱</th><th>分成利润</th><th>利润 ⚡</th>
-                <th>备注</th><th>支付方式</th><th>签证有效期</th><th>VALID</th><th>当前进度</th><th>状态</th><th>紧急</th>
+                <th>备注</th><th>支付方式</th><th>签证有效期</th><th>VALID</th><th>当前进度</th><th>状态</th><th>尾款完成选项</th><th>紧急</th>
               <th>删除</th>
               </tr>
             </thead>
-            <tbody id="cust-tbody"><tr><td colspan="24" style="text-align:center;color:var(--text-light);padding:24px;font-size:14px;">加载客户数据中...</td></tr></tbody>
+            <tbody id="cust-tbody"><tr><td colspan="26" style="text-align:center;color:var(--text-light);padding:24px;font-size:14px;">加载客户数据中...</td></tr></tbody>
           </table>
         </div>
         <div class="pagination" style="padding:12px 16px;position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);z-index:5;">
@@ -981,6 +981,10 @@
             <select id="price-cur" onchange="document.getElementById('deposit-cur').value=this.value" style="border:none;background:#E8F0FE;color:#1E3A5F;font-weight:700;font-size:14px;padding:0 4px;border-radius:6px 0 0 6px;cursor:pointer;outline:none;height:100%;"><option>RM</option><option>RMB</option></select>
             <input id="price-amt" class="form-input" type="number" placeholder="请输入卖价" style="border-left:none;">
           </div>
+        </div>
+        <div class="form-row">
+          <div class="form-label">尾款完成项目</div>
+          <select id="add-tail-sel" class="form-input" style="cursor:pointer;"><option value="已付押金" selected>已付押金</option><option value="完成尾款">完成尾款</option></select>
         </div>
         <div class="form-row">
           <div class="form-label">代理负责人 <span class="required">*</span></div>
@@ -1683,7 +1687,7 @@ syncAddProjDropdown();
 // Inline editable columns
 // Col indices (0-based): 0=客户姓名,1=护照号,2=跟进人,4=代理名字,5=月份,6=PassTo
 //   7=ExtraFee,8=押金,9=Total,10=CostType,11=卖价,12=本钱,13=利润,14=分成利润,15=支付方式,16=签证有效期
-const EDITABLE_COLS = new Set([1,2,3,5,7,8,9,12,13,14,16,17]); // 10=待付款 auto // 11=Cost Type select, 15=利润 auto // 16=备注 17=支付方式
+const EDITABLE_COLS = new Set([1,2,3,5,7,8,9,13,14,15,17,18]); // 10=待付款 auto // 11=尾款完成项目 select // 12=Cost Type select, 16=利润 auto // 17=备注 18=支付方式
 
 // Double-click to edit — unified for customer + finance tables
 (function() {
@@ -1757,8 +1761,8 @@ const EDITABLE_COLS = new Set([1,2,3,5,7,8,9,12,13,14,16,17]); // 10=待付款 a
       if (_tr && _tr.closest('#cust-tbody')) {
         const _tds = Array.from(_tr.querySelectorAll('td'));
         const _ci = _tds.indexOf(_td);
-        if (_ci === 8 || _ci === 12 || _ci === 13 || _ci === 14) setTimeout(() => recalcProfit(_tr), 0);
-        if (_ci === 8  || _ci === 9 || _ci === 12) setTimeout(() => recalcBalance(_tr), 0);
+        if (_ci === 8 || _ci === 13 || _ci === 14 || _ci === 15) setTimeout(() => recalcProfit(_tr), 0);
+        if (_ci === 8  || _ci === 9 || _ci === 13) setTimeout(() => recalcBalance(_tr), 0);
       }
     }
     hideBar();
@@ -1856,9 +1860,9 @@ const EDITABLE_COLS = new Set([1,2,3,5,7,8,9,12,13,14,16,17]); // 10=待付款 a
   }
 
   // === Customer table ===
-  const EDITABLE_COLS = new Set([1,2,3,5,7,8,9,10,12,13,14,16]); // 11=Cost Type select, 15=利润 auto
-  const PROFIT_TRIGGER_COLS  = new Set([8,12,13,14]); // Extra Fee,卖价,本钱,分成利润 → recalc 利润
-  const BALANCE_TRIGGER_COLS = new Set([8,9,12]);    // Extra Fee,押金,卖价 → recalc balance
+  const EDITABLE_COLS = new Set([1,2,3,5,7,8,9,10,13,14,15,17]); // 12=Cost Type select, 16=利润 auto
+  const PROFIT_TRIGGER_COLS  = new Set([8,13,14,15]); // Extra Fee,卖价,本钱,分成利润 → recalc 利润
+  const BALANCE_TRIGGER_COLS = new Set([8,9,13]);    // Extra Fee,押金,卖价 → recalc balance
   document.querySelectorAll('#cust-tbody tr').forEach(tr => {
     tr.querySelectorAll('td').forEach((td, i) => {
       if (EDITABLE_COLS.has(i)) makeEditable(td);
@@ -2175,6 +2179,8 @@ async function saveNewCustomer() {
   const price = document.getElementById('price-amt')?.value.trim();
   const agent = document.querySelector('#page-addcustomer input[placeholder="请输入代理负责人"]')?.value.trim();
   const pay = document.querySelector('#page-addcustomer input[placeholder="请填写支付方式，例如 Transfer / Cash / Wechat"]')?.value.trim();
+  const tailVal = document.getElementById('add-tail-sel')?.value || '已付押金';
+  const tailOpts = '<option' + (tailVal==='已付押金'?' selected':'') + '>已付押金</option><option' + (tailVal==='完成尾款'?' selected':'') + '>完成尾款</option>';
 
   if (!name || !passport || !project || !deposit || !price || !agent) {
     alert('请填写所有必填项（除支付方式外）');
@@ -2226,6 +2232,7 @@ async function saveNewCustomer() {
     <td>0</td>
     <td>${depositVal.toLocaleString()}</td>
     <td class="balance-auto">${balance.toLocaleString()}</td>
+    <td><select class="tail-sel" onchange="onTailChange(this)" style="border:1px solid #D1D5DB;border-radius:6px;padding:3px 6px;font-size:12px;background:white;cursor:pointer;outline:none;font-family:inherit;">${tailOpts}</select></td>
     <td><select class="cost-type-sel" style="border:1px solid #D1D5DB;border-radius:6px;padding:3px 6px;font-size:12px;background:white;cursor:pointer;outline:none;font-family:inherit;"><option value="RM" ${priceCur!=='RMB'?'selected':''}>RM</option><option value="RMB" ${priceCur==='RMB'?'selected':''}>RMB</option></select></td>
     <td>${priceVal.toLocaleString()}</td>
     <td>0</td>
@@ -2237,15 +2244,16 @@ async function saveNewCustomer() {
     <td class="valid-days">-</td>
     <td><select class="progress-sel is-urgent"><option selected>待递交</option><option>待补资料</option><option>待处理</option><option>待付款</option><option>审批中</option><option>未贴签</option><option>已完成</option><option>已取消</option></select></td>
     <td><select class="status-sel is-pending"><option selected>未完成</option><option>已完成</option></select></td>
+    <td><select class="tail-sel" onchange="onTailChange(this)" style="border:1px solid #D1D5DB;border-radius:6px;padding:3px 6px;font-size:12px;background:white;cursor:pointer;outline:none;font-family:inherit;">${tailOpts}</select></td>
     <td style="text-align:center;"><button class="emg-btn" onclick="toggleEmergency(this)" title="标记紧急处理">🚨</button></td>
     <td style="text-align:center;"><button onclick="deleteCustomerRow(this)" style="background:#EF4444;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;">删除</button></td>`;
   if (tbody) {
     tbody.insertBefore(tr, tbody.firstChild);
     renumberRows();
     // Apply editable + recalc
-    const EDITABLE = new Set([1,2,3,5,7,8,9,12,13,14,16,17]);
-    const PROFIT_TRIGGER = new Set([8,12,13,14]);
-    const BALANCE_TRIGGER = new Set([8,9,12]);
+    const EDITABLE = new Set([1,2,3,5,7,8,9,13,14,15,17,18]);
+    const PROFIT_TRIGGER = new Set([8,13,14,15]);
+    const BALANCE_TRIGGER = new Set([8,9,13]);
     tr.querySelectorAll('td').forEach(function(td, i) {
       if (EDITABLE.has(i) && typeof makeEditable === 'function') makeEditable(td);
       if (PROFIT_TRIGGER.has(i)) td.addEventListener('input', function(){ if(typeof recalcProfit==='function') recalcProfit(tr); });
@@ -2278,7 +2286,7 @@ async function saveNewCustomer() {
     if (newStatSel) newStatSel.addEventListener('change', function(){ saveNewRowStorage(); if(typeof updateStatusColor==='function') updateStatusColor(newStatSel); });
   }
   // Save to Supabase (let Supabase auto-generate UUID) + sync to Google Sheets
-  var custData = {name:name, passport:passport, project:project, agent:agent, deposit:Number(deposit)||0, cost_type:depositCur||'RM', price:Number(price)||0, payment:pay, submit_date:todayStr, progress:'待递交', status:'未完成'};
+  var custData = {name:name, passport:passport, project:project, agent:agent, deposit:Number(deposit)||0, cost_type:depositCur||'RM', price:Number(price)||0, payment:pay, submit_date:todayStr, progress:'待递交', status:'未完成', tail_status:tailVal};
   // 立即 POST 到 Google Apps Script（不等 Supabase 回调，最可靠）
   /* Google Sheets 同步已移除（旧系统专用） */
   // 同时存入 Supabase
@@ -2321,6 +2329,7 @@ function clearAddForm() {
   const projSel = document.getElementById('add-proj-sel');
   if (projSel) projSel.selectedIndex = 0;
   // Reset currency selects to RM
+  var tsel = document.getElementById('add-tail-sel'); if(tsel) tsel.value = '已付押金';
   var dcur = document.getElementById('deposit-cur'); if(dcur) dcur.value = 'RM';
   var pcur = document.getElementById('price-cur'); if(pcur) pcur.value = 'RM';
   // Clear payment method
@@ -2353,21 +2362,22 @@ function openEditModal(tr) {
   document.getElementById('em-extrafee').value = gNum(8);
   document.getElementById('em-deposit').value = gNum(9);
   // Cost type select
-  var ctSel = tds[11] ? tds[11].querySelector('select') : null;
+  var ctSel = tds[12] ? tds[12].querySelector('select') : null;
   document.getElementById('em-costtype').value = ctSel ? ctSel.value : 'RM';
-  document.getElementById('em-price').value = gNum(12);
-  document.getElementById('em-cost').value = gNum(13);
-  document.getElementById('em-shareprofit').value = gNum(14);
-  document.getElementById('em-note').value = gt(16);
-  document.getElementById('em-pay').value = gt(17);
+  document.getElementById('em-price').value = gNum(13);
+  document.getElementById('em-cost').value = gNum(14);
+  document.getElementById('em-shareprofit').value = gNum(15);
+  document.getElementById('em-note').value = gt(17);
+  document.getElementById('em-pay').value = gt(18);
   // Visa date
-  var visaInp = tds[18] ? tds[18].querySelector('input[type="date"]') : null;
+  var visaInp = tds[19] ? tds[19].querySelector('input[type="date"]') : null;
   document.getElementById('em-visadate').value = visaInp ? visaInp.value : '';
   // Progress / Status
-  var progSel = tds[20] ? tds[20].querySelector('select') : null;
+  var progSel = tds[21] ? tds[21].querySelector('select') : null;
   document.getElementById('em-progress').value = progSel ? progSel.value : '待递交';
-  var statSel = tds[21] ? tds[21].querySelector('select') : null;
+  var statSel = tds[22] ? tds[22].querySelector('select') : null;
   document.getElementById('em-status').value = statSel ? statSel.value : '未完成';
+  document.getElementById('em-tail').value = getTailVal(tr);
   document.getElementById('edit-cust-modal').style.display = 'flex';
 }
 function closeEditModal() {
@@ -2389,19 +2399,20 @@ function saveEditModal() {
   st(7, document.getElementById('em-passto').value.trim());
   st(8, document.getElementById('em-extrafee').value || '0');
   st(9, document.getElementById('em-deposit').value || '0');
-  setSel(11, document.getElementById('em-costtype').value);
-  st(12, document.getElementById('em-price').value || '0');
-  st(13, document.getElementById('em-cost').value || '0');
-  st(14, document.getElementById('em-shareprofit').value || '0');
-  st(16, document.getElementById('em-note').value.trim());
-  st(17, document.getElementById('em-pay').value.trim());
-  var visaInp = tds[18] ? tds[18].querySelector('input[type="date"]') : null;
+  setSel(12, document.getElementById('em-costtype').value);
+  st(13, document.getElementById('em-price').value || '0');
+  st(14, document.getElementById('em-cost').value || '0');
+  st(15, document.getElementById('em-shareprofit').value || '0');
+  st(17, document.getElementById('em-note').value.trim());
+  st(18, document.getElementById('em-pay').value.trim());
+  var visaInp = tds[19] ? tds[19].querySelector('input[type="date"]') : null;
   if (visaInp) visaInp.value = document.getElementById('em-visadate').value;
-  setSel(20, document.getElementById('em-progress').value);
-  setSel(21, document.getElementById('em-status').value);
-  var pSel = tds[20] ? tds[20].querySelector('.progress-sel') : null;
+  setSel(21, document.getElementById('em-progress').value);
+  setSel(22, document.getElementById('em-status').value);
+  setTailVal(tr, document.getElementById('em-tail').value);
+  var pSel = tds[21] ? tds[21].querySelector('.progress-sel') : null;
   if (pSel && typeof updateProgressColor==='function') updateProgressColor(pSel);
-  var sSel = tds[21] ? tds[21].querySelector('.status-sel') : null;
+  var sSel = tds[22] ? tds[22].querySelector('.status-sel') : null;
   if (sSel && typeof updateStatusColor==='function') updateStatusColor(sSel);
   if (typeof recalcProfit==='function') recalcProfit(tr);
   if (typeof recalcBalance==='function') recalcBalance(tr);
@@ -2680,13 +2691,13 @@ function toggleSelectAllVisible(cb) {
 
 function updateValidDays(tr) {
   const tds = tr.querySelectorAll('td');
-  if (tds.length < 19) return; // not a customer row
-  const input = tds[18] && tds[18].querySelector('input[type="date"]');
+  if (tds.length < 20) return; // not a customer row
+  const input = tds[19] && tds[19].querySelector('input[type="date"]');
   if (!input || !input.value) return;
   const today  = new Date(); today.setHours(0,0,0,0);
   const expiry = new Date(input.value); expiry.setHours(0,0,0,0);
   const days   = Math.round((expiry - today) / 86400000);
-  const vtd    = tds[19];
+  const vtd    = tds[20];
   vtd.className = 'valid-days';
   if (days < 0) {
     vtd.textContent = '已到期';
@@ -2700,27 +2711,45 @@ function updateValidDays(tr) {
   }
 }
 
+// ── 尾款完成项目（已付押金 / 完成尾款）：同一字段，表格里两处下拉自动同步 ──
+function getTailVal(tr) {
+  var s = tr.querySelector('.tail-sel');
+  return s ? s.value : '已付押金';
+}
+function setTailVal(tr, v) {
+  tr.querySelectorAll('.tail-sel').forEach(function(s){ s.value = v; });
+}
+function onTailChange(sel) {
+  var tr = sel.closest('tr');
+  if (!tr) return;
+  setTailVal(tr, sel.value);
+  recalcBalance(tr);
+  if (window.saveFullRowToStorage) window.saveFullRowToStorage(tr);
+  if (typeof syncDashboard === 'function') syncDashboard();
+}
+
 function recalcBalance(tr) {
   const tds = tr.querySelectorAll('td');
-  if (tds.length < 13) return;
+  if (tds.length < 14) return;
   const parseNum = s => parseFloat((s || '').replace(/,/g, '')) || 0;
   const extra   = parseNum(tds[8].textContent);  // Extra Fee
   const deposit = parseNum(tds[9].textContent);  // 押金
-  const sell    = parseNum(tds[12].textContent); // 卖价
-  const balance = sell + extra - deposit;
+  const sell    = parseNum(tds[13].textContent); // 卖价
+  // 选了「完成尾款」→ 待付款 = 0；否则 = 卖价 + Extra Fee − 押金
+  const balance = (getTailVal(tr) === '完成尾款') ? 0 : (sell + extra - deposit);
   tds[10].textContent = balance >= 0 ? balance.toLocaleString() : '-' + Math.abs(balance).toLocaleString();
 }
 
 function recalcProfit(tr) {
   const tds = tr.querySelectorAll('td');
-  if (tds.length < 16) return;
+  if (tds.length < 17) return;
   const parseNum = s => parseFloat((s || '').replace(/,/g, '')) || 0;
   const extra = parseNum(tds[8].textContent);  // Extra Fee
-  const sell  = parseNum(tds[12].textContent); // 卖价
-  const cost  = parseNum(tds[13].textContent); // 本钱
-  const share = parseNum(tds[14].textContent); // 分成利润
+  const sell  = parseNum(tds[13].textContent); // 卖价
+  const cost  = parseNum(tds[14].textContent); // 本钱
+  const share = parseNum(tds[15].textContent); // 分成利润
   const profit = sell - cost - share + extra;
-  tds[15].textContent = profit >= 0 ? profit.toLocaleString() : '-' + Math.abs(profit).toLocaleString();
+  tds[16].textContent = profit >= 0 ? profit.toLocaleString() : '-' + Math.abs(profit).toLocaleString();
 }
 
 function syncCostFromProject(sel) {
@@ -2731,10 +2760,10 @@ function syncCostFromProject(sel) {
   const tr = sel.closest('tr');
   if (!tr) return;
   const tds = tr.querySelectorAll('td');
-  if (tds[13]) {
+  if (tds[14]) {
     const isRmb = proj.cost < 0;
     const dispVal = Math.abs(proj.cost);
-    tds[13].textContent = dispVal.toLocaleString();
+    tds[14].textContent = dispVal.toLocaleString();
     var ctSel = tr.querySelector('.cost-type-sel');
     if (ctSel) ctSel.value = isRmb ? 'RMB' : 'RM';
     recalcProfit(tr);
@@ -2935,6 +2964,7 @@ async function saveFinanceRecord() {
         <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">签证有效期</label><input id="em-visadate" type="date" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
         <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">当前进度</label><select id="em-progress" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fff;"><option>待递交</option><option>待补资料</option><option>待处理</option><option>待付款</option><option>审批中</option><option>未贴签</option><option>已完成</option><option>已取消</option></select></div>
         <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">状态</label><select id="em-status" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fff;"><option>未完成</option><option>已完成</option></select></div>
+        <div><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">尾款完成项目</label><select id="em-tail" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fff;"><option>已付押金</option><option>完成尾款</option></select></div>
         <div style="grid-column:1/-1;"><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:3px;">备注</label><input id="em-note" type="text" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;"></div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #E5E7EB;padding-top:14px;">
@@ -3002,8 +3032,8 @@ function refreshEmgPanel() {
     var tds = tr.querySelectorAll('td');
     var name = tds[1] ? tds[1].textContent.trim() : '-';
     var passport = tds[2] ? tds[2].textContent.trim() : '-';
-    var sel = tds[19] ? tds[19].querySelector('select') : null;
-    var progress = sel ? sel.value : (tds[19] ? tds[19].textContent.trim() : '-');
+    var sel = tds[20] ? tds[20].querySelector('select') : null;
+    var progress = sel ? sel.value : (tds[20] ? tds[20].textContent.trim() : '-');
     var key = passport || name;
     var note = savedNotes[key] !== undefined ? savedNotes[key] : (tr.dataset.note || '');
     var card = document.createElement('div');
@@ -3038,21 +3068,22 @@ function getRowData(tr) {
     cell(7),  // Pass To
     cell(8),  // Extra Fee
     cell(9),  // 押金
-    cell(11), // Cost Type
-    cell(12), // 卖价
-    cell(13), // 本钱
-    cell(15), // 利润
-    cell(14), // 分成利润
-    cell(16), // 备注
-    cell(17), // 支付方式
-    cell(18), // 签证有效期
-    cell(19), // VALID
-    cell(20), // 当前进度
-    cell(21), // 状态
+    cell(12), // Cost Type
+    cell(13), // 卖价
+    cell(14), // 本钱
+    cell(16), // 利润
+    cell(15), // 分成利润
+    cell(17), // 备注
+    cell(18), // 支付方式
+    cell(19), // 签证有效期
+    cell(20), // VALID
+    cell(21), // 当前进度
+    cell(22), // 状态
+    cell(23), // 尾款完成选项
   ];
 }
 
-var HEADERS = ['NO','客户姓名','护照号','跟进人','项目内容','代理名字','提交日期','Pass To','Extra Fee','押金','Cost Type','卖价','本钱','利润','分成利润','备注','支付方式','签证有效期','VALID','当前进度','状态'];
+var HEADERS = ['NO','客户姓名','护照号','跟进人','项目内容','代理名字','提交日期','Pass To','Extra Fee','押金','Cost Type','卖价','本钱','利润','分成利润','备注','支付方式','签证有效期','VALID','当前进度','状态','尾款完成选项'];
 
 function downloadCSV() {
   var rows = getVisibleRows();
@@ -3091,15 +3122,15 @@ function updateBonusMonth(val) {
   var totalProfit = 0;
   document.querySelectorAll('#cust-tbody tr').forEach(function(tr) {
     var tds = tr.querySelectorAll('td');
-    if (tds.length < 16) return;
+    if (tds.length < 17) return;
     var submitDate = tds[6] ? tds[6].textContent.trim() : '';
     if (!submitDate || submitDate.length < 7) return;
     var dp = submitDate.split('-');
     if (parseInt(dp[0]) === y && parseInt(dp[1]) - 1 === m) {
-      var statusSel = tds[21] ? tds[21].querySelector('select') : null;
+      var statusSel = tds[22] ? tds[22].querySelector('select') : null;
       var statusVal = statusSel ? statusSel.value : '';
       if (statusVal !== '已完成') return;
-      var p = parseFloat((tds[15] ? tds[15].textContent.replace(/,/g,'') : '0')) || 0;
+      var p = parseFloat((tds[16] ? tds[16].textContent.replace(/,/g,'') : '0')) || 0;
       totalProfit += p;
     }
   });
@@ -3318,27 +3349,30 @@ function syncDashboard() {
 
   rows.forEach(function(tr) {
     var tds = tr.querySelectorAll('td');
-    if (tds.length < 20) return;
+    if (tds.length < 24) return;
 
     var submitDate = tds[6] ? tds[6].textContent.trim() : '';
-    var sellTxt = tds[12] ? tds[12].textContent.replace(/,/g,'').trim() : '0';
-    var profitTxt = tds[15] ? tds[15].textContent.replace(/,/g,'').trim() : '0';
+    var sellTxt = tds[13] ? tds[13].textContent.replace(/,/g,'').trim() : '0';
+    var profitTxt = tds[16] ? tds[16].textContent.replace(/,/g,'').trim() : '0';
     var sell = parseFloat(sellTxt) || 0;
     var profit = parseFloat(profitTxt) || 0;
-    var progressSel = tds[20] ? tds[20].querySelector('select') : null;
+    var progressSel = tds[21] ? tds[21].querySelector('select') : null;
     var progress = progressSel ? progressSel.value : '';
-    var statusSel = tds[21] ? tds[21].querySelector('select') : null;
+    var statusSel = tds[22] ? tds[22].querySelector('select') : null;
     var status = statusSel ? statusSel.value : '';
     var projSel = tds[4] ? tds[4].querySelector('select') : null;
     var projName = projSel ? projSel.value : (tds[4] ? tds[4].textContent.trim() : '');
-    var dateInput = tds[18] ? tds[18].querySelector('input[type="date"]') : null;
+    var dateInput = tds[19] ? tds[19].querySelector('input[type="date"]') : null;
     var visaDate = dateInput ? dateInput.value : '';
-    var costTypeSel = tds[11] ? tds[11].querySelector('select') : null;
+    var costTypeSel = tds[12] ? tds[12].querySelector('select') : null;
     var costType = costTypeSel ? costTypeSel.value : 'RM';
     var balanceTxt = tds[10] ? tds[10].textContent.replace(/,/g,'').trim() : '0';
     var balanceVal = parseFloat(balanceTxt) || 0;
     // 已完成但尾款还没收完 —— 这笔利润先不计入统计（收完款会自动补回）
     var excludeFromProfit = (status === '已完成' && balanceVal > 0);
+    // 已真正收到钱：当前进度=已完成 + 状态=已完成 + 尾款=完成尾款，三个条件同时满足才算
+    var tailDone = (getTailVal(tr) === '完成尾款');
+    var collected = (progress === '已完成' && status === '已完成' && tailDone);
 
     // Today stats
     if (submitDate === todayStr) {
@@ -3357,15 +3391,14 @@ function syncDashboard() {
         monthCustomers++;
         monthRevenue += sell;
         if (costType === 'RMB') monthRevenueRMB += sell; else monthRevenueRM += sell;
-        // 本月总利润 = 已收利润 + 待收利润（全部计入，不再排除未收尾款的部分）
-        monthProfit += profit;
-        if (costType === 'RMB') monthProfitRMB += profit; else monthProfitRM += profit;
-        if (balanceVal > 0) {
-          // 尾款还没收完 —— 这笔利润算"待收利润"
-          if (costType === 'RMB') monthProfitPendingRMB += profit; else monthProfitPendingRM += profit;
+        // 本月总利润 = 只算「已真正收到钱」的订单（进度=已完成 + 状态=已完成 + 尾款=完成尾款）
+        if (collected) {
+          monthProfit += profit;
+          if (costType === 'RMB') { monthProfitRMB += profit; monthProfitPaidRMB += profit; }
+          else { monthProfitRM += profit; monthProfitPaidRM += profit; }
         } else {
-          // 钱已经全部收完 —— 这笔利润算"已收利润"
-          if (costType === 'RMB') monthProfitPaidRMB += profit; else monthProfitPaidRM += profit;
+          // 还没满足三个条件 —— 这笔利润算"待收利润"（仅供参考，不计入总利润）
+          if (costType === 'RMB') monthProfitPendingRMB += profit; else monthProfitPendingRM += profit;
         }
         monthNew++;
         if (projName) {
@@ -3434,7 +3467,7 @@ function syncDashboard() {
     var bv = parseFloat((tds[10] ? tds[10].textContent.replace(/,/g,'') : '0')) || 0;
     if (bv > 0) {
       paymentTotal += bv;
-      var ctSel = tds[11] ? tds[11].querySelector('select') : null;
+      var ctSel = tds[12] ? tds[12].querySelector('select') : null;
       var ct = ctSel ? ctSel.value : 'RM';
       if (ct === 'RMB') paymentTotalRMB += bv; else paymentTotalRM += bv;
     }
@@ -3485,6 +3518,8 @@ function buildAndInsertCustRow(d, tbody) {
   var profit = priceVal - costVal;
   var costType = d.cost_type || 'RM';
   var isUrgent = d.note && d.note.startsWith('[U]');
+  var tailV = (d.tail_status === '完成尾款') ? '完成尾款' : '已付押金';
+  var tailSelHtml = '<select class="tail-sel" onchange="onTailChange(this)" style="border:1px solid #D1D5DB;border-radius:6px;padding:3px 6px;font-size:12px;background:white;cursor:pointer;outline:none;font-family:inherit;"><option' + (tailV==='已付押金'?' selected':'') + '>已付押金</option><option' + (tailV==='完成尾款'?' selected':'') + '>完成尾款</option></select>';
   var tr = document.createElement('tr');
   tr.dataset.sbId = d.id || '';
   tr.dataset.note = isUrgent ? d.note.slice(3) : (d.note || '');
@@ -3502,6 +3537,7 @@ function buildAndInsertCustRow(d, tbody) {
     '<td>' + (d.extra_fee||0) + '</td>' +
     '<td>' + depositVal.toLocaleString() + '</td>' +
     '<td class="balance-auto">' + balance.toLocaleString() + '</td>' +
+    '<td>' + tailSelHtml + '</td>' +
     '<td><select class="cost-type-sel" style="border:1px solid #D1D5DB;border-radius:6px;padding:3px 6px;font-size:12px;background:white;cursor:pointer;outline:none;font-family:inherit;"><option value="RM"' + (costType!=='RMB'?' selected':'') + '>RM</option><option value="RMB"' + (costType==='RMB'?' selected':'') + '>RMB</option></select></td>' +
     '<td>' + priceVal.toLocaleString() + '</td>' +
     '<td>' + costVal.toLocaleString() + '</td>' +
@@ -3513,14 +3549,15 @@ function buildAndInsertCustRow(d, tbody) {
     '<td class="valid-days">-</td>' +
     '<td><select class="progress-sel' + (isPendingSubmit?' is-urgent':'') + '">' + progOpts + '</select></td>' +
     '<td><select class="status-sel ' + (isCompleted?'is-done':'is-pending') + '">' + statOpts + '</select></td>' +
+    '<td>' + tailSelHtml + '</td>' +
     '<td style="text-align:center;"><button class="emg-btn' + (isUrgent ? ' active' : '') + '" onclick="toggleEmergency(this)" title="标记紧急处理">🚨</button></td>' +
     '<td style="text-align:center;"><button onclick="deleteCustomerRow(this)" style="background:#EF4444;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;">删除</button></td>';
   tbody.appendChild(tr);
   wireRowEvents(tr);
   // Wire up events
-  var EDITABLE = new Set([1,2,3,5,7,8,9,12,13,14,16,17]);
-  var PROFIT_TRIGGER = new Set([8,12,13,14]);
-  var BALANCE_TRIGGER = new Set([8,9,12]);
+  var EDITABLE = new Set([1,2,3,5,7,8,9,13,14,15,17,18]);
+  var PROFIT_TRIGGER = new Set([8,13,14,15]);
+  var BALANCE_TRIGGER = new Set([8,9,13]);
   tr.querySelectorAll('td').forEach(function(td, i) {
     if (EDITABLE.has(i) && typeof makeEditable === 'function') makeEditable(td);
     if (PROFIT_TRIGGER.has(i)) td.addEventListener('input', function(){ if(typeof recalcProfit==='function') recalcProfit(tr); });
@@ -3555,11 +3592,11 @@ function renumberRows() {
 async function loadCustomersFromSupabase() {
   var tbody = document.getElementById('cust-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="24" style="text-align:center;color:var(--text-light);padding:24px;">加载中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="26" style="text-align:center;color:var(--text-light);padding:24px;">加载中...</td></tr>';
   var rows = await sbSelect('customers', '?order=customer_no.desc');
   tbody.innerHTML = '';
   if (!rows || rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="24" style="text-align:center;color:var(--text-light);padding:24px;font-size:14px;">暂无客户数据，点击「新增」添加第一个客户</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="26" style="text-align:center;color:var(--text-light);padding:24px;font-size:14px;">暂无客户数据，点击「新增」添加第一个客户</td></tr>';
   } else {
     rows.forEach(function(r) { buildAndInsertCustRow(r, tbody); });
     renumberRows();
@@ -3576,7 +3613,7 @@ window.saveFullRowToStorage = function(tr) {
   // Only save if it's a real UUID (not temp ID)
   if (!sbId || sbId.startsWith('cust_')) return;
   var tds = tr.querySelectorAll('td');
-  if (tds.length < 21) return;
+  if (tds.length < 24) return;
   function cellText(i) { return (tds[i] ? tds[i].textContent.trim() : ''); }
   var projSel = tr.querySelector('.proj-sel');
   var ctSel = tr.querySelector('.cost-type-sel');
@@ -3594,14 +3631,15 @@ window.saveFullRowToStorage = function(tr) {
     extra_fee:   parseFloat(cellText(8)) || 0,
     deposit:     parseFloat(cellText(9).replace(/,/g,'')) || 0,
     cost_type:   ctSel ? ctSel.value : 'RM',
-    price:       parseFloat(cellText(12).replace(/,/g,'')) || 0,
-    cost:        parseFloat(cellText(13).replace(/,/g,'')) || 0,
-    share_profit: parseFloat(cellText(14).replace(/,/g,'')) || 0,
-    remark:      cellText(16),
-    payment:     cellText(17),
+    price:       parseFloat(cellText(13).replace(/,/g,'')) || 0,
+    cost:        parseFloat(cellText(14).replace(/,/g,'')) || 0,
+    share_profit: parseFloat(cellText(15).replace(/,/g,'')) || 0,
+    remark:      cellText(17),
+    payment:     cellText(18),
     visa_date:   dateInput ? dateInput.value : '',
     progress:    progSel ? progSel.value : '',
     status:      statSel ? statSel.value : '未完成',
+    tail_status: getTailVal(tr),
     note:        (tr.querySelector('.emg-btn') && tr.querySelector('.emg-btn').classList.contains('active') ? '[U]' : '') + (tr.dataset.note || '')
   };
   sbUpdate('customers', sbId, data);
