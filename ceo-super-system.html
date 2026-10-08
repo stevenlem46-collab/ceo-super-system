@@ -1417,7 +1417,18 @@ function renderProjects() {
     return `<tr draggable="true" data-proj-id="${p.id}">
       <td class="proj-drag-handle" style="text-align:center;cursor:grab;color:#9CA3AF;font-size:20px;user-select:none;padding:0 8px;">⠿</td>
       <td>${p.id}</td>
-      <td>${p.name}</td>
+      <td>
+        <div id="name-display-${p.id}" onclick="editName(${p.id})" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <span>${String(p.name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+          <span style="font-size:11px;color:var(--text-light);opacity:0.7">✏️</span>
+        </div>
+        <div id="name-input-${p.id}" style="display:none;">
+          <input type="text" id="name-val-${p.id}"
+            style="border:1.5px solid var(--accent);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:600;color:var(--accent);width:100%;min-width:160px;box-sizing:border-box;outline:none;"
+            onkeydown="if(event.key==='Enter')saveName(${p.id});if(event.key==='Escape')cancelName(${p.id})">
+          <div style="font-size:10px;color:var(--text-light);margin-top:3px;">Enter 保存 · Esc 取消</div>
+        </div>
+      </td>
       <td>
         <div class="cost-cell" id="cost-display-${p.id}" onclick="editCost(${p.id})"
           style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--accent);font-weight:600;">
@@ -1489,6 +1500,51 @@ function wireProjDrag() {
       syncAddProjDropdown();
     });
   });
+}
+
+// ── 项目名称可修改（只改项目列表，已选此项目的旧客户保持旧名称） ──
+function editName(id) {
+  const p = projectData.find(x=>x.id===id);
+  if (!p) return;
+  document.getElementById('name-display-'+id).style.display = 'none';
+  document.getElementById('name-input-'+id).style.display = 'block';
+  const inp = document.getElementById('name-val-'+id);
+  inp.value = p.name;
+  inp.focus();
+  inp.select();
+}
+
+function cancelName(id) {
+  document.getElementById('name-input-'+id).style.display = 'none';
+  document.getElementById('name-display-'+id).style.display = 'flex';
+}
+
+function saveName(id) {
+  const p = projectData.find(x=>x.id===id);
+  const inp = document.getElementById('name-val-'+id);
+  if (!p || !inp) return;
+  const newName = inp.value.trim();
+  if (!newName || newName === p.name) { cancelName(id); return; }
+  if (projectData.some(x => x.id !== id && x.name === newName)) {
+    alert('已经有同名的项目了，请换一个名称');
+    return;
+  }
+  p.name = newName;
+  if (p.sbId) sbUpdate('projects', p.sbId, {name: newName});
+  renderProjects();
+  syncAddProjDropdown();
+  // 同步刷新客户页的「项目内容」筛选下拉
+  var fsel = document.getElementById('cust-proj-filter');
+  if (fsel) {
+    var cur = fsel.value;
+    fsel.innerHTML = '<option value="">项目内容</option>';
+    projectData.filter(function(x){ return x.status === 'on'; }).forEach(function(x) {
+      var o = document.createElement('option');
+      o.value = x.name; o.textContent = x.name;
+      if (x.name === cur) o.selected = true;
+      fsel.appendChild(o);
+    });
+  }
 }
 
 function editCost(id) {
