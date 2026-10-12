@@ -2274,7 +2274,7 @@ async function saveNewCustomer() {
   const priceVal = parseFloat(price) || 0;
   const balance = priceVal - depositVal;
   const projOptions = (projectData && projectData.length > 0 ? projectData.filter(function(p){return p.status==='on';}).map(function(p){return p.name;}) : ['马来西亚借票','代办新护照/旅行证','无盖章激活','🚗刷签人去（当天好）','🚗刷签双系统','🚗盖章(7天-10天）','🚗盖章(3天-5天）','✈️盖章(7-10天)','设置柜台服务','罚款SP14天（一本一次）','罚款SP30天（一本一次）','西马一年女佣证','东马半年','东马一年','西马半年演绎证','西马半年老人签','西马续签4年中国结婚证','西马一年PVP','西马学生证两年（1年+1年）','马来西亚考驾校服务','一年工作签开银行服务','马来西亚电子签（EVISA）','APEC（马来西人）','马来西亚和中国双认证服务','VIP快速通道（提前3天）']);
-  const projOpts = projOptions.map(p => `<option${p===project?' selected':''}>${p}</option>`).join('');
+  const projOpts = projOptions.map(p => { const pv = String(p).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); return `<option value="${pv}"${p===project?' selected':''}>${pv}</option>`; }).join('');
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td style="text-align:center;"><input type="checkbox" class="row-select-cb" onchange="toggleRowSelect(this)" style="cursor:pointer;vertical-align:middle;margin-right:4px;"><span class="row-no" style="font-weight:600;color:var(--accent);font-size:13px;vertical-align:middle;">${rowCount}</span></td>
@@ -3560,7 +3560,8 @@ function buildAndInsertCustRow(d, tbody) {
   var progressOpts = ['待递交','待补资料','待处理','待付款','审批中','未贴签','已完成','已取消'];
   var statusOpts = ['未完成','已完成'];
   var projOptions = (projectData && projectData.length > 0 ? projectData.filter(function(p){return p.status==='on';}).map(function(p){return p.name;}) : ['马来西亚借票','代办新护照/旅行证','无盖章激活','🚗刷签人去（当天好）','🚗刷签双系统','🚗盖章(7天-10天）','🚗盖章(3天-5天）','✈️盖章(7-10天)','设置柜台服务','罚款SP14天（一本一次）','罚款SP30天（一本一次）','西马一年女佣证','东马半年','东马一年','西马半年演绎证','西马半年老人签','西马续签4年中国结婚证','西马一年PVP','西马学生证两年（1年+1年）','马来西亚考驾校服务','一年工作签开银行服务','马来西亚电子签（EVISA）','APEC（马来西人）','马来西亚和中国双认证服务','VIP快速通道（提前3天）']);
-  var projOpts = projOptions.map(function(p){ return '<option' + (p===d.project?' selected':'') + '>' + p + '</option>'; }).join('');
+  // 明确写 value，避免名称里的连续空格被浏览器压成 1 个（会导致筛选对不上）
+  var projOpts = projOptions.map(function(p){ var pv = String(p).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); return '<option value="' + pv + '"' + (p===d.project?' selected':'') + '>' + pv + '</option>'; }).join('');
   var progOpts = progressOpts.map(function(o){ return '<option' + (o===(d.progress||'待递交')?' selected':'') + '>' + o + '</option>'; }).join('');
   var statOpts = statusOpts.map(function(o){ return '<option' + (o===(d.status||'未完成')?' selected':'') + '>' + o + '</option>'; }).join('');
   var isCompleted = (d.status === '已完成');
